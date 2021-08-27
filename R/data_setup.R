@@ -1,6 +1,3 @@
-library(tidyverse)
-library(readxl)
-
 dat_covid <- readr::read_csv("https://covid.ourworldindata.org/data/owid-covid-data.csv") %>% 
   transmute(code = countrycode::countrycode(iso_code, origin = 'iso3c', 
                                             destination = 'iso2c'),
@@ -9,13 +6,6 @@ dat_covid <- readr::read_csv("https://covid.ourworldindata.org/data/owid-covid-d
             death = new_deaths_per_million/1000,
             new_cases, new_deaths
   )
-
-
-  load("data/raw/Germany_rawtext.RData")
-  
-Germany_rawtext <- 
-  # german articles before translation
-  tidytext::unnest_tokens(words, text)
 
 dat_covid_monthly <- dat_covid %>% 
   mutate(
