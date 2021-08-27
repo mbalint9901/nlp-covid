@@ -14,6 +14,8 @@ knitr::opts_chunk$set(echo = TRUE, fig.align = "center", warning = FALSE, messag
 ```{r packages}
 # Set up --------------------------------------------------------------------------------
 
+WD <- getwd()
+
 ## Packages ============================================================================= 
 
 library(tidyverse)
@@ -25,7 +27,6 @@ library(tm)
 library(wordcloud)
 library(lubridate)
 library(knitr)
-
 ```
 
 ```{r theme, include=FALSE}
