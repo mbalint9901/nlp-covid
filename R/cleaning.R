@@ -7,7 +7,8 @@ library(geofacet)
 library(tidytext)
 library(tm)
 
-setwd(str_c(getwd(), "/data/raw & temporary/"))
+WD <- getwd()
+setwd(str_c(WD, "/data/raw & temporary/"))
 
 # greece --------------------------------------------------------
 
@@ -725,6 +726,19 @@ mygrid <- data.frame(
 
 # save ------------------------------------------------------------------------------
 
-save(list = c('dat', 'dat_sentiment_daily', 'dat_sentiment_monthly',  'dat_covid_monthly', 'dat_words_monthly', 'dat_covid', 'Hungary_rawtext', 'dat_covid_monthly', 'dat_eco_sent', 'dat_unemployment', 'mygrid'), 
-     file = "C:/rprojects/CoronaSentiment/dat.RData")
+setwd(str_c(WD, "/data"))
 
+dat %>% 
+  mutate(
+    r = row_number(),
+    r = cut(r, breaks = 6, labels = F)
+  ) %>% 
+  group_by(r) %>% 
+  group_map(.keep = T, ~ saveRDS(select(.x, -r), str_c("dat_", first(.x$r), ".RDS")))
+
+
+
+# save(list = c('dat', 'dat_sentiment_daily', 'dat_sentiment_monthly',  'dat_covid_monthly', 'dat_words_monthly', 'dat_covid', 'Hungary_rawtext', 'dat_covid_monthly', 'dat_eco_sent', 'dat_unemployment', 'mygrid'), 
+     # file = "C:/rprojects/CoronaSentiment/dat.RData")
+
+setwd(WD)
