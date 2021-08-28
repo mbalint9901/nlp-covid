@@ -25,7 +25,6 @@ sentiment_functions <- list(
 
 dat_words <- dat %>% 
   select(date, country, text) %>%
-  sample_n(100) %>% 
   unnest_tokens(word, text)
 
 dat_words_monthly <- dat_words %>% 
