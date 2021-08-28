@@ -1,19 +1,11 @@
----
-title: "CoronaSentiment"
-author: "Marcell P. Granát & Bálint Mazzag"
-date: '2021 04 23 '
-output: github_document
-editor_options: 
-  chunk_output_type: console
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, fig.align = "center", warning = FALSE, message = FALSE, error = TRUE)
-```
+CoronaSentiment
+================
+Marcell P. Granát & Bálint Mazzag
+2021 04 23
 
 # Setup
 
-```{r packages}
+``` r
 # Set up --------------------------------------------------------------------------------
 
 ## Packages ============================================================================= 
@@ -36,13 +28,11 @@ WD <- getwd() %>%
   gsub(pattern = "nlp-covid.*", replacement = "nlp-covid")
 
 setwd(WD)
-
 ```
-
 
 # Data
 
-```{r}
+``` r
 # Data ----------------------------------------------------------------------------------
 
 # DFs from the cleaning.R file ==========================================================
@@ -82,10 +72,9 @@ modified_bing <- read_delim(str_c(WD, "/data/sentiment_scores.csv"),
     ";", escape_double = FALSE, trim_ws = TRUE) %>% 
   select(word, value = 'my_sentiment_2') %>% 
   na.omit()
-
 ```
 
-```{r}
+``` r
 metadata_df <- tibble::tribble(
   ~"Ország", ~"Ország kódja",            ~"Letöltött hírforrás", ~"Állami?",     ~"Nyelv",
   "Ausztria",          "AT",                    "Die Presse",            "Nem",    "német",
@@ -139,12 +128,47 @@ metadata_df <- dat %>%
 select(metadata_df, 'Ország', "Letöltött hírforrás", "Állami?", "Kezdő dátum", "Végdátum", "Cikkek száma") %>% 
   knitr::kable(caption = "A vizsgált 30 ország médiumainak főbb adatai",
                align = c('l', rep('c', 5)))
-
 ```
+
+| Ország             |      Letöltött hírforrás      | Állami? | Kezdő dátum |  Végdátum  | Cikkek száma |
+|:-------------------|:-----------------------------:|:-------:|:-----------:|:----------:|:------------:|
+| Ausztria           |          Die Presse           |   Nem   | 2020-01-09  | 2021-01-31 |     6580     |
+| Belgium (holland)  |              VRT              |  Igen   | 2020-02-04  | 2021-01-31 |    12239     |
+| Belgium (francia)  |             RTBF              |  Igen   | 2020-02-04  | 2021-01-31 |    12239     |
+| Bulgária           | Bulgarian National Television |  Igen   | 2020-03-07  | 2021-01-31 |     3188     |
+| Svájc              |       SWI swissinfo.ch        |   Nem   | 2020-01-20  | 2021-01-31 |     1009     |
+| Ciprus             |          Cyprus Mail          |   Nem   | 2020-01-20  | 2021-01-31 |     4622     |
+| Csehország         |        Česká televize         |  Igen   | 2020-03-13  | 2021-01-31 |     2997     |
+| Németország        |          DER SPIEGEL          |   Nem   | 2020-02-02  | 2021-01-31 |     8225     |
+| Dánia              |           Politiken           |   Nem   | 2020-02-11  | 2021-01-31 |     2599     |
+| Észtország         |              ERR              |  Igen   | 2020-01-14  | 2021-01-31 |     3926     |
+| Görögország        |              ERT              |  Igen   | 2020-01-20  | 2021-01-31 |     1283     |
+| Spanyolország      |             RTVE              |  Igen   | 2020-01-16  | 2021-01-31 |     7188     |
+| Finnország         |           Yle News            |  Igen   | 2020-03-19  | 2021-01-31 |     9508     |
+| Franciaország      |           France 24           |  Igen   | 2020-01-06  | 2021-01-31 |     3001     |
+| Horvátország       |         Večernji list         |   Nem   | 2020-01-28  | 2021-01-31 |     8263     |
+| Magyarország       |           hirado.hu           |  Igen   | 2020-01-09  | 2021-01-31 |     9063     |
+| Izland             |              RÚV              |  Igen   | 2020-02-01  | 2021-01-29 |     6369     |
+| Olaszország        |         la Repubblica         |   Nem   | 2020-01-11  | 2021-01-31 |    47643     |
+| Litvánia           |        LRT televizija         |  Igen   | 2020-01-20  | 2021-01-30 |    10906     |
+| Luxemburg          |          L’essentiel          |   Nem   | 2020-01-09  | 2021-01-31 |     1489     |
+| Lettország         |              LSM              |  Igen   | 2020-02-27  | 2021-01-30 |     2671     |
+| Málta              |              TVM              |  Igen   | 2020-03-13  | 2021-01-31 |     2557     |
+| Hollandia          |              NOS              |   Nem   | 2020-01-09  | 2021-01-31 |     4858     |
+| Norvégia           |              NRK              |  Igen   | 2020-01-06  | 2021-01-31 |     3223     |
+| Lengyelország      |              TVP              |  Igen   | 2020-01-14  | 2021-01-31 |     8660     |
+| Portugália         |              RTP              |  Igen   | 2020-03-10  | 2021-01-31 |    24535     |
+| Románia            |              TVR              |  Igen   | 2020-02-22  | 2021-01-31 |     7646     |
+| Svédország         |              SVT              |  Igen   | 2020-01-22  | 2021-01-31 |     4545     |
+| Szlovénia          |         RTV Slovenija         |  Igen   | 2020-01-09  | 2021-01-31 |     2494     |
+| Szlovákia          |           Nový Čas            |   Nem   | 2020-02-06  | 2021-01-31 |    14801     |
+| Egyesült Királyság |         The Guardian          |   Nem   | 2020-01-18  | 2021-01-27 |     3716     |
+
+A vizsgált 30 ország médiumainak főbb adatai
 
 ## Google translate
 
-```{r fig.cap="Leggyakrabban előforduló szavak a magyar nyelvű cikkekben a fordítást megelőzően és azt követően.", fig.height=8}
+``` r
 # Automatic translation =================================================================
 
 st_hu <- c(stopwords::stopwords('hungarian'), "is", "ha", "hozzá", "címlapfotó",
@@ -198,10 +222,11 @@ ggpubr::ggarrange(
       legend.direction = 'horizontal'
     ), common.legend = T
 )
-
 ```
 
-```{r fig.cap = "A teljes korpusz leggyakoribb szavai, havonta", fig.height=10}
+    ## Error in filter(., !str_detect(words, "\\d")): object 'Hungary_rawtext' not found
+
+``` r
 dat_words_monthly %>% 
   group_by(date, words) %>% 
   summarise(n = sum(n)) %>% 
@@ -217,10 +242,11 @@ dat_words_monthly %>%
   labs(x = "Szavak előfordulási aránya", y = NULL)
 ```
 
+    ## Error in group_by(., date, words): object 'dat_words_monthly' not found
 
 ## The pandemic
 
-```{r timeline_plotting, fig.cap="Az új esetek száma és a szentimentet tartalmazó szavak száma naponta"}
+``` r
 library(ggforce)
 library(glue)
 library(ggtext)
@@ -295,11 +321,15 @@ dat_covid %>%
   }
 ```
 
+    ## Error: Problem with `filter()` input `..1`.
+    ## x object 'dat_sentiment_daily' not found
+    ## i Input `..1` is `&...`.
+
 # Text analysis
 
 ## Sentiment
 
-```{r}
+``` r
 readxl::read_excel("C:/rprojects/CoronaSentiment/bing_to_score.xlsx") %>% 
   janitor::clean_names() %>% 
   filter(sentiment != my_sentiment) %>% 
@@ -310,7 +340,36 @@ readxl::read_excel("C:/rprojects/CoronaSentiment/bing_to_score.xlsx") %>%
   kable(caption = "A leggyakoribb olyan szavak a korpuszban, melyek pontszámát megváltoztattuk a koronavírus-specifikus szótárban", col.names = c("Szó", "Gyakoriság", "Régi szentiment", "új szentiment"))
 ```
 
-```{r fig.cap="Leggyakrabban előforduló pozitív és negatív szentimenttel rendelkező szavak"}
+| Szó         | Gyakoriság | Régi szentiment | új szentiment |
+|:------------|-----------:|----------------:|:--------------|
+| positive    |      80778 |               1 | -1            |
+| trump       |      29681 |               1 | 0             |
+| negative    |      25899 |              -1 | 1             |
+| patient     |      22501 |               1 | -1            |
+| significant |      15156 |               1 | -1            |
+| fall        |      12073 |              -1 | 1             |
+| rapid       |      11753 |               1 | -1            |
+| fell        |      10968 |              -1 | 1             |
+| decline     |      10752 |              -1 | 1             |
+| positives   |      10751 |               1 | -1            |
+| vice        |       8370 |              -1 | 0             |
+| fans        |       7820 |               1 | -1            |
+| exceeded    |       7073 |               1 | -1            |
+| fallen      |       5221 |              -1 | 1             |
+| sharp       |       3830 |               1 | -1            |
+| falling     |       3774 |              -1 | 1             |
+| tough       |       3382 |               1 | -1            |
+| exceed      |       3343 |               1 | -1            |
+| defeat      |       3267 |               1 | -1            |
+| falls       |       2984 |              -1 | 1             |
+| declining   |       2855 |              -1 | 1             |
+| exceeds     |       2300 |               1 | -1            |
+| tougher     |       1661 |               1 | -1            |
+
+A leggyakoribb olyan szavak a korpuszban, melyek pontszámát
+megváltoztattuk a koronavírus-specifikus szótárban
+
+``` r
 library(reshape2)
 
 dat_words_monthly %>% 
@@ -333,11 +392,11 @@ dat_words_monthly %>%
   acast(words ~ sentiment, value.var = "n", fill = 0) %>%
   comparison.cloud(colors = c("cyan4", "red4"),
                    max.words = 100)
-
 ```
 
+    ## Error in group_by(., country, words): object 'dat_words_monthly' not found
 
-```{r fig.height=6, fig.cap='Szentimenttel bíró szavakkal korreláló szavak hálója'}
+``` r
 library(ggraph)
 library(igraph)
 
@@ -379,10 +438,20 @@ dat %>%
   geom_node_text(aes(label = name), repel = TRUE) +
   theme_void() + 
   labs(color = 'Szentiment')
-
 ```
 
-```{r}
+    ## Error: Unknown colour name: negatĂ­v
+
+<div class="figure" style="text-align: center">
+
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-7-1.png" alt="Szentimenttel bíró szavakkal korreláló szavak hálója"  />
+<p class="caption">
+Szentimenttel bíró szavakkal korreláló szavak hálója
+</p>
+
+</div>
+
+``` r
 dat_sentiment_daily %>% 
   group_by(date) %>% 
   summarise_at(c('n_total', 'n'), .funs = function(x) sum(x, na.rm = T)) %>% 
@@ -392,10 +461,11 @@ dat_sentiment_daily %>%
                 color = '7 napos mozgóátlag'), size = 1.3) +
   scale_color_manual(values = c('#E3120B')) + 
   labs(x = NULL, y = 'Szentimenttel rendelkező szavak aránya', color = NULL)
-
 ```
 
-```{r fig.cap="A szentiment alakulása országonként", fig.height=10, fig.width=15, out.extra='angle=90', fig.align ='center'}
+    ## Error in group_by(., date): object 'dat_sentiment_daily' not found
+
+``` r
 # Explore the data ----------------------------------------------------------------------
 
 dat_sentiment_daily %>% 
@@ -408,12 +478,13 @@ dat_sentiment_daily %>%
   scale_x_date(limits = c(min(dat_sentiment_daily$date), max(dat_sentiment_daily$date)),
                breaks = c(min(dat_sentiment_daily$date), max(dat_sentiment_daily$date))) +
   labs(y = "Szentiment", x = NULL)
-
 ```
+
+    ## Error in mutate(., code = country): object 'dat_sentiment_daily' not found
 
 ## TF-IDF
 
-```{r tf_idf_per_month, fig.height=8, fig.cap="A cikkekben havonta leginkább jellemző szavak, TF-IDF értékek alapján"}
+``` r
 dat_words_monthly %>% 
   filter(words != "feff") %>% 
   mutate(month = ifelse(year(date)>2020,month(date)+12, month(date))) %>% 
@@ -454,9 +525,11 @@ dat_words_monthly %>%
   labs(x = "TF-IDF", y = NULL)
 ```
 
+    ## Error in filter(., words != "feff"): object 'dat_words_monthly' not found
+
 ## Topic model
 
-```{r fig.cap='Finding the optimal number of topics for modelling', fig.height=2.5}
+``` r
 topic_models <- tibble(n_topic = c(2:14, 16)) %>% # number 15 is missing
   mutate(
     file_name = str_c(WD, '/data/topic_models/mod', n_topic, '.RData'),
@@ -470,11 +543,20 @@ ggplot(topic_models, aes(n_topic, loglike)) +
   labs(x = 'Topikok száma', y = 'Loglikelihood')
 ```
 
-```{r}
+<div class="figure" style="text-align: center">
+
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-10-1.png" alt="Finding the optimal number of topics for modelling"  />
+<p class="caption">
+Finding the optimal number of topics for modelling
+</p>
+
+</div>
+
+``` r
 mod_topic <- topic_models[["model"]][[11]]
 ```
 
-```{r fig.height=12, fig.cap='Leggyakoribb szavak topikonként'}
+``` r
 tidy(mod_topic, matrix = "beta") %>%
   anti_join(rename(stop_words, term = word)) %>% 
   group_by(topic) %>%
@@ -490,10 +572,18 @@ tidy(mod_topic, matrix = "beta") %>%
   )) +
   scale_y_reordered() + 
   labs(x = expression(beta), y = NULL)
-
 ```
 
-```{r}
+<div class="figure" style="text-align: center">
+
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-12-1.png" alt="Leggyakoribb szavak topikonként"  />
+<p class="caption">
+Leggyakoribb szavak topikonként
+</p>
+
+</div>
+
+``` r
 tidy(mod_topic, matrix = "beta") %>% # unreported
   anti_join(rename(stop_words, term = word)) %>% 
   group_by(topic) %>%
@@ -501,10 +591,26 @@ tidy(mod_topic, matrix = "beta") %>% # unreported
   group_modify(.f = ~ tibble(terms = str_c(.x$term, collapse = ", "))) %>% 
   ungroup() %>% 
   kable(caption= "Leggyakoribb szavak topikonként", align = c("c", "l"))
-
 ```
 
-```{r fig.cap="Topikok relatív megoszlásának időbeni dinamikája"}
+| topic | terms                                                                                                                                                                                        |
+|:-----:|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|   1   | percent, people, coronavirus, covid, 19, virus, infected, health, corona, infection, tests, time, symptoms, test, data, disease, spread, research, risk, study                               |
+|   2   | people, covid, 19, government, health, social, republic, minister, public, czech, time, information, measures, days, emergency, law, ministry, protection, situation, added                  |
+|   3   | people, coronavirus, covid, 19, infections, infected, health, patients, hospital, day, infection, deaths, tests, total, positive, 24, reported, hours, confirmed, died                       |
+|   4   | 2020, coronavirus, church, covid, 19, home, virus, hospital, day, positive, time, days, film, tested, world, family, woman, house, video, wife                                               |
+|   5   | people, coronavirus, covid, 19, home, schools, care, infected, school, health, patients, hospital, children, infection, students, employees, medical, staff, hospitals, situation            |
+|   6   | percent, coronavirus, government, billion, companies, crisis, countries, time, million, pandemic, european, support, euros, market, eu, economy, economic, company, due, financial           |
+|   7   | people, covid, 19, home, government, health, social, cent, masks, public, pandemic, workers, swiss, week, switzerland, link, it’s, lockdown, ireland, told                                   |
+|   8   | people, coronavirus, vaccine, covid, 19, trump, virus, donald, vaccines, health, vaccination, china, president, million, doses, pandemic, european, vaccinated, united, world                |
+|   9   | 1, coronavirus, league, corona, madrid, time, football, pandemic, games, season, world, start, players, announced, de, team, due, sports, french, france                                     |
+|  10   | people, coronavirus, virus, government, health, country, minister, countries, restrictions, measures, days, italy, travel, border, spread, quarantine, announced, prime, authorities, closed |
+|  11   | people, coronavirus, health, corona, social, country, crisis, countries, president, million, pandemic, media, city, police, world, court, authorities, due, political, security              |
+|  12   | people, home, day, crisis, time, pandemic, days, life, world, family, situation, live, lot, weeks, feel, hope, moment, times, difficult, understand                                          |
+
+Leggyakoribb szavak topikonként
+
+``` r
 dat_topics %>% 
   mutate(date = ym(str_sub(as.character(date), end = -4))) %>% 
   group_by(date, country) %>% 
@@ -527,10 +633,11 @@ dat_topics %>%
     legend.position = 'right',
     legend.direction = 'vertical'
   )
-
 ```
 
-```{r fig.height=6, fig.cap='Topikok jellemzése szentiment, dátum és gyakoriság szerint'}
+    ## Error in mutate(., date = ym(str_sub(as.character(date), end = -4))): object 'dat_topics' not found
+
+``` r
 topic_descript_df <- tibble( 
   topic = c("Kutatások", "Politika", "Statisztikák", "Közélet", "Intézmények", "Gazdaság",
             "Lezárások", "Oltások", "Sport", "Utazás", "Rendőrségi intézkedések", "Mentálhigiénia"),
@@ -570,7 +677,11 @@ topic_descript_df <- tibble(
     .$sentiment
 ) %>% 
   arrange(desc(n))
+```
 
+    ## Error in select(., country, starts_with("topic")): object 'dat_topics' not found
+
+``` r
 ggplot(data = topic_descript_df) +
   geom_hline(aes(yintercept = 0), linetype = 2, color = 'grey20') +
   geom_point(aes(x = date, y = (sentiment-mean(sentiment))*n, fill = sentiment, size = n)) +
@@ -590,14 +701,15 @@ ggplot(data = topic_descript_df) +
     legend.box = "vertical",
     legend.key.width = unit(1, 'cm')
   )
-
 ```
+
+    ## Error in ggplot(data = topic_descript_df): object 'topic_descript_df' not found
 
 # Econometrics
 
 ## Descriptive statistics
 
-```{r}
+``` r
 dat_plm <- dat_eco_sent %>% 
   filter(indic == "BS-ESI-I") %>% 
   select(date = time, code = geo, eco = values) %>% 
@@ -641,10 +753,9 @@ dat_plm <- dat_eco_sent %>%
   ) %>% 
   filter(!is.na(sentiment)) %>% 
   select(code, date, everything())
-
 ```
 
-```{r fig.cap = "Regressziós fa"}
+``` r
 # Regression tree -----------------------------------------------------------------------
 dat_plm %>% 
   select(sentiment, eco, unemployment, cases, death, new_cases, new_deaths, t) %>% 
@@ -653,10 +764,18 @@ dat_plm %>%
   rpart::rpart(formula = Szentiment ~.,
                cp = .012) %>% 
   rattle::fancyRpartPlot(palettes = 'PuRd', sub = NULL)
-
 ```
 
-```{r fig.cap = "A hírekben megjelenő szentiment és gazdaság érzékelési index közötti kapcsolat"}
+<div class="figure" style="text-align: center">
+
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-17-1.png" alt="Regressziós fa"  />
+<p class="caption">
+Regressziós fa
+</p>
+
+</div>
+
+``` r
 dat_plm %>% 
   mutate(
     date = str_sub(as.character(date), end = -4)
@@ -668,12 +787,21 @@ dat_plm %>%
   theme(legend.position = 'bottom') +
   scale_fill_brewer(palette = "Dark2") +
   labs(x = 'Gazdaság érzékelési index', y = 'Szentiment a hírekben', fill = NULL)
-
 ```
+
+<div class="figure" style="text-align: center">
+
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-18-1.png" alt="A hírekben megjelenő szentiment és gazdaság érzékelési index közötti kapcsolat"  />
+<p class="caption">
+A hírekben megjelenő szentiment és gazdaság érzékelési index közötti
+kapcsolat
+</p>
+
+</div>
 
 ## Panel models
 
-```{r}
+``` r
 panel_models <- tibble(
   formula = c(
     "sentiment ~ death + eco",
@@ -692,7 +820,12 @@ panel_models <- tibble(
 knitr::kable(select(panel_models, -pooling, -within))
 ```
 
-```{r results='asis'}
+| formula                                     | pooltest_pvalue |  r_within |
+|:--------------------------------------------|----------------:|----------:|
+| sentiment \~ death + eco                    |               0 | 0.2670211 |
+| sentiment \~ death + eco + season + death:t |               0 | 0.6563689 |
+
+``` r
 pwalk(list(model = pull(panel_models, within), 
            title = c("Regressziós eredmények időszakra való kontrollálás nélkül", 
                      "Becsült regresszió paraméterek kontrollálva az időszakokra")), 
@@ -703,3 +836,21 @@ pwalk(list(model = pull(panel_models, within),
       })
 ```
 
+| term  |   estimate | std.error |  statistic | p.value |
+|:------|-----------:|----------:|-----------:|--------:|
+| death |  0.2141993 | 0.0440131 |   4.866721 | 1.8e-06 |
+| eco   | -0.0056132 | 0.0005184 | -10.828266 | 0.0e+00 |
+
+Regressziós eredmények időszakra való kontrollálás nélkül
+
+| term                |   estimate | std.error | statistic |   p.value |
+|:--------------------|-----------:|----------:|----------:|----------:|
+| death               | -0.2044546 | 0.1145339 | -1.785101 | 0.0752289 |
+| eco                 | -0.0015587 | 0.0004901 | -3.180538 | 0.0016198 |
+| season2020 tavasz   |  0.2724408 | 0.0163202 | 16.693443 | 0.0000000 |
+| season2020 nyár     |  0.2358439 | 0.0153714 | 15.343064 | 0.0000000 |
+| season2020 ősz      |  0.2306219 | 0.0141736 | 16.271212 | 0.0000000 |
+| season2020/2021 tél |  0.2558671 | 0.0182536 | 14.017338 | 0.0000000 |
+| death:t             |  0.0284812 | 0.0118543 |  2.402600 | 0.0168705 |
+
+Becsült regresszió paraméterek kontrollálva az időszakokra
