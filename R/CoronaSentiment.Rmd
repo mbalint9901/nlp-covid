@@ -3,6 +3,8 @@ title: "CoronaSentiment"
 author: "Marcell P. Granát & Bálint Mazzag"
 date: '2021 04 23 '
 output: github_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -14,7 +16,10 @@ knitr::opts_chunk$set(echo = TRUE, fig.align = "center", warning = FALSE, messag
 ```{r packages}
 # Set up --------------------------------------------------------------------------------
 
-WD <- getwd()
+WD <- getwd() %>% 
+  gsub(pattern = "nlp-covid.*", replacement = "nlp-covid")
+
+setwd(WD)
 
 ## Packages ============================================================================= 
 
@@ -27,36 +32,10 @@ library(tm)
 library(wordcloud)
 library(lubridate)
 library(knitr)
+
+ggthemr::ggthemr()
 ```
 
-```{r theme, include=FALSE}
-## Gg theme =============================================================================
-
-update_geom_defaults("point", list(fill = "cyan4", 
-                                   shape = 21, 
-                                   color = "black", 
-                                   size = 1.4))
-update_geom_defaults("line", 
-                     list(color = "midnightblue", size = 1.4))
-
-update_geom_defaults("smooth", list(color = "red4", size = 1.4))
-
-update_geom_defaults("density", 
-                     list(color = "midnightblue", fill =  "midnightblue",
-                          alpha = .3, size = 1.4))
-
-
-extrafont::loadfonts(device="win")
-
-theme_set(theme_grey() + theme(
-  legend.direction = "horizontal",
-  legend.position = 'bottom',
-  text = element_text(family = "georgia", size = 11)
-))
-
-Sys.setlocale(locale ='Hungarian')
-
-```
 
 # Data
 
@@ -65,7 +44,19 @@ Sys.setlocale(locale ='Hungarian')
 
 # DFs from the cleaning.R file ==========================================================
 
-load("C:/rprojects/CoronaSentiment/dat.RData")
+dat <- list.files(str_c(WD, "/data/")) %>% 
+  keep(~ str_detect(., "dat_\\d.RDS")) %>% 
+  {str_c(WD, "/data/", .)} %>% 
+  map(readRDS) %>% 
+  reduce(rbind)
+
+dat_sentiment_monthly <- read_rds(str_c(WD, "/data/dat_sentiment_daily.RDS")) %>% 
+  select(date, country, sentiment =  new_sentiment, n = new_n, n_total = n)
+
+dat_sentiment_monthly <- read_rds(str_c(WD, "/data/dat_sentiment_monthly.RDS")) %>% 
+  select(date, country, sentiment = new_sentiment, n = new_n, n_total = n)
+
+source(str_c(WD, "/R/data_setup.R")) # additional datasets available online
 
 # This RData contains the articles after the main cleaning process
 # To ensure full reproducibility see the attached files at the corresponding
@@ -78,15 +69,15 @@ load("C:/rprojects/CoronaSentiment/dat.RData")
 # Posterior estimation of each article with topic models is also computation heavy
 # >> find the estimation in -> topics_byarticle.R <-
 
-load("C:/rprojects/CoronaSentiment/topics_bydat.RData")
-
+#load("C:/rprojects/CoronaSentiment/topics_bydat.RData") 
+# FIXME
 ### COVID-dictionary ####################################################################
 
 # own edited sentiment dictionary calibrated to COVID articles
 
-modified_bing <- readxl::read_excel("C:/rprojects/CoronaSentiment/bing_to_score.xlsx") %>% 
-  select(word, value = 'my sentiment') %>% 
-  mutate(value = as.numeric(value)) %>% 
+modified_bing <- read_delim(str_c(WD, "/data/sentiment_scores.csv"), 
+    ";", escape_double = FALSE, trim_ws = TRUE) %>% 
+  select(word, value = 'my_sentiment_2') %>% 
   na.omit()
 
 ```
@@ -126,7 +117,7 @@ metadata_df <- tibble::tribble(
   "Svédország",          "SE",                           "SVT",           "Igen",     "svéd",
   "Szlovákia",          "SK",                      "Nový Čas",            "Nem",  "szlovák",
   "Szlovénia",          "SI",                 "RTV Slovenija",           "Igen",  "szlovén"
-)
+) # TODO translate
 
 metadata_df <- dat %>% 
   count(country) %>% 
