@@ -23,9 +23,20 @@ sentiment_functions <- list(
   n = function(x) length(na.omit(x))
 )
 
-dat_sentiment_daily <- dat %>% 
+dat_words <- dat %>% 
   select(date, country, text) %>%
-  unnest_tokens(word, text) %>% 
+  sample_n(100) %>% 
+  unnest_tokens(word, text)
+
+dat_words_monthly <- dat_words %>% 
+  mutate(date = lubridate::ym(str_sub(date, end = -3))) %>% 
+  count(date, country, word) %>% 
+  anti_join(stop_words) %>% 
+  filter(!str_detect(word, "\\d"))
+
+saveRDS(dat_words_monthly, str_c(WD, "/data/dat_words_monthly"))
+
+dat_sentiment_daily <- dat_words %>% 
   left_join(sentiment_scores) %>% 
   select(-word) %>% 
   group_by(date, country) %>% 

@@ -20,7 +20,7 @@ library(wordcloud)
 library(lubridate)
 library(knitr)
 
-ggthemr::ggthemr()
+ggthemr::ggthemr("greyscale")
 
 ## Working directory ====================================================================
 
@@ -62,8 +62,8 @@ source(str_c(WD, "/R/data_setup.R")) # additional datasets available online
 # Posterior estimation of each article with topic models is also computation heavy
 # >> find the estimation in -> topics_byarticle.R <-
 
-#load("C:/rprojects/CoronaSentiment/topics_bydat.RData") 
-# FIXME
+load(str_c(WD, "/data/topics_bydat.RData"))
+
 ### COVID-dictionary ####################################################################
 
 # own edited sentiment dictionary calibrated to COVID articles
@@ -635,7 +635,14 @@ dat_topics %>%
   )
 ```
 
-    ## Error in mutate(., date = ym(str_sub(as.character(date), end = -4))): object 'dat_topics' not found
+<div class="figure" style="text-align: center">
+
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-14-1.png" alt="Topikok relatív megoszlásának időbeni dinamikája"  />
+<p class="caption">
+Topikok relatív megoszlásának időbeni dinamikája
+</p>
+
+</div>
 
 ``` r
 topic_descript_df <- tibble( 
@@ -677,11 +684,7 @@ topic_descript_df <- tibble(
     .$sentiment
 ) %>% 
   arrange(desc(n))
-```
 
-    ## Error in select(., country, starts_with("topic")): object 'dat_topics' not found
-
-``` r
 ggplot(data = topic_descript_df) +
   geom_hline(aes(yintercept = 0), linetype = 2, color = 'grey20') +
   geom_point(aes(x = date, y = (sentiment-mean(sentiment))*n, fill = sentiment, size = n)) +
@@ -703,7 +706,14 @@ ggplot(data = topic_descript_df) +
   )
 ```
 
-    ## Error in ggplot(data = topic_descript_df): object 'topic_descript_df' not found
+<div class="figure" style="text-align: center">
+
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-15-1.png" alt="Topikok jellemzése szentiment, dátum és gyakoriság szerint"  />
+<p class="caption">
+Topikok jellemzése szentiment, dátum és gyakoriság szerint
+</p>
+
+</div>
 
 # Econometrics
 

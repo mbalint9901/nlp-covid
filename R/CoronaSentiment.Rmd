@@ -28,7 +28,7 @@ library(wordcloud)
 library(lubridate)
 library(knitr)
 
-ggthemr::ggthemr()
+ggthemr::ggthemr("greyscale")
 
 ## Working directory ====================================================================
 
@@ -72,8 +72,8 @@ source(str_c(WD, "/R/data_setup.R")) # additional datasets available online
 # Posterior estimation of each article with topic models is also computation heavy
 # >> find the estimation in -> topics_byarticle.R <-
 
-#load("C:/rprojects/CoronaSentiment/topics_bydat.RData") 
-# FIXME
+load(str_c(WD, "/data/topics_bydat.RData"))
+
 ### COVID-dictionary ####################################################################
 
 # own edited sentiment dictionary calibrated to COVID articles
@@ -351,9 +351,9 @@ f_colorise <- function(x) {
     filter(value == -1) %>% 
     pull(word)
   case_when(
-    x %in% pos ~ 'pozitív',
-    x %in% neg ~ 'negatív',
-    T ~ 'neutrális'
+    x %in% pos ~ 'positive',
+    x %in% neg ~ 'nagative',
+    T ~ 'neutral'
   )
 }
 
