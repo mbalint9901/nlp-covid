@@ -35,7 +35,7 @@ ggthemr::ggthemr("greyscale")
 ## Working directory ====================================================================
 
 WD <- getwd() %>% 
-  gsub(pattern = "nlp-covid.*", replacement = "nlp-covid-main")
+  gsub(pattern = "nlp-covid.*", replacement = "nlp-covid")
 
 setwd(WD)
 
