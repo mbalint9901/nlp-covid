@@ -9,6 +9,21 @@ dat <- list.files(str_c(WD, "/data")) %>%
   map(readRDS) %>% 
   reduce(rbind)
 
+
+#TODO For topic based sentiments
+
+# load(str_c(WD, "/data/topics_bydat.RData"))
+# 
+# Először topik kiválasztása max érték alapján, aztán unnest token
+# dat_words <- merge(dat, 
+#   dat_topics %>% 
+#     {
+#       cbind(.,topic = apply(.[, 4:15], 1, which.max))
+#     } %>% 
+#     select(URL, topic)) %>% 
+#     select(date, country, text, topic) %>%
+#     unnest_tokens(word, text)
+
 sentiment_scores <- read_delim(str_c(WD, "/data/sentiment_scores.csv"), 
                                ";", escape_double = FALSE, trim_ws = TRUE) %>% 
   select(word, 
@@ -23,30 +38,26 @@ sentiment_functions <- list(
   n = function(x) length(na.omit(x))
 )
 
-dat_words <- dat %>% 
-  select(date, country, text) %>%
-  unnest_tokens(word, text)
-
 dat_words_monthly <- dat_words %>% 
   mutate(date = lubridate::ym(str_sub(date, end = -3))) %>% 
   count(date, country, word) %>% 
   anti_join(stop_words) %>% 
   filter(!str_detect(word, "\\d"))
 
-saveRDS(dat_words_monthly, str_c(WD, "/data/dat_words_monthly"))
+saveRDS(dat_words_monthly, str_c(WD, "/data/dat_words_monthly.RDS"))
 
 dat_sentiment_daily <- dat_words %>% 
   left_join(sentiment_scores) %>% 
   select(-word) %>% 
   group_by(date, country) %>% 
   summarise_each(sentiment_functions) %>% 
-  ungroup() %>% 
+  ungroup()  %<>% 
   select(!ends_with("_total") | starts_with("original_n_total")) %>% 
   rename(n = "original_n_total")
 
 saveRDS(dat_sentiment_daily, str_c(WD, "/data/dat_sentiment_daily.RDS"))
 
-dat_sentiment_monthly <- dat_sentiment_daily %>% 
+dat_sentiment_monthly <- x %>% 
   mutate(date = lubridate::ym(str_sub(date, end = -3))) %>% 
   group_by(date, country) %>% 
   summarise(
