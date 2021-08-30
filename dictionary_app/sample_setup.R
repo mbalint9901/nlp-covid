@@ -10,12 +10,8 @@ dat <- list.files(str_c(WD, "/data/")) %>%
   map(readRDS) %>% 
   reduce(rbind)
 
-dat %>%
-  select(text) %>% 
-  unnes
+bing_df <- get_sentiments("bing")
 
-bing_comparison <- read_delim(str_c(WD, "/data/sentiment_scores.csv"), 
-                              ";", escape_double = FALSE, trim_ws = TRUE)
 
 load(str_c(WD, "/data/topics_bydat.RData"))
 
@@ -27,20 +23,19 @@ topic_name <- tibble(
   )
 )
 
-# sentence_sample <- 
-  dat %>% 
+sentence_sample <-dat %>% 
   left_join(select(dat_topics, URL, topic = top_topic)) %>% 
   left_join(topic_name) %>% 
-  group_by(topic_name) %>% 
-  group_modify(~ sample_n(.x, 10000, replace = TRUE)) %>% 
-  tidytext::unnest_tokens(sentences, text, token = "sentences") %>% 
-  distinct()
-  tidytext::unnest_tokens(words, sentences, drop = F) %>% 
-  left_join(sen_bing) %>% 
-  left_join(modified_bing)
+  select(topic_name, text) %>% 
+  sample_frac(.1) %>% # ensure randomness
+  # TODO incrase rate to 1
+  tidytext::unnest_tokens(word, text, drop = F) %>% 
+  right_join(bing_df) %>% 
+  group_by(topic_name, word) %>% 
+  group_modify(~ head(.x, 10)) %>%
+  ungroup() %>% 
+  unnest_tokens(sentence, text, token = "sentences") %>% 
+  filter(str_detect(sentence, word)) %>% 
+  select(-sentiment)
 
-
-sentence_sample %>% 
-  count(words, sort = TRUE)
-
-saveRDS(sentence_sample, file = "sentence_sample.RDS")
+saveRDS(sentence_sample, str_c(WD, "/dictionary_app/sentence_sample.RDS"))
