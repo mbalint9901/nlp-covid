@@ -51,13 +51,13 @@ dat_sentiment_daily <- dat_words %>%
   select(-word) %>% 
   group_by(date, country) %>% 
   summarise_each(sentiment_functions) %>% 
-  ungroup()  %<>% 
+  ungroup() %>% 
   select(!ends_with("_total") | starts_with("original_n_total")) %>% 
   rename(n = "original_n_total")
 
 saveRDS(dat_sentiment_daily, str_c(WD, "/data/dat_sentiment_daily.RDS"))
 
-dat_sentiment_monthly <- x %>% 
+dat_sentiment_monthly <- dat_sentiment_daily %>% 
   mutate(date = lubridate::ym(str_sub(date, end = -3))) %>% 
   group_by(date, country) %>% 
   summarise(
