@@ -40,7 +40,6 @@ setwd(WD)
 
 ```
 
-
 ```{r theme, include=FALSE}
 ## Gg theme =============================================================================
 
@@ -54,6 +53,7 @@ update_geom_defaults("line",
                      list(color = viridis::viridis_pal()(20)[6], size = 1.4))
 
 update_geom_defaults("smooth", list(color = "cyan4", size = 1.4))
+update_geom_defaults("col", list(color = "black", fill = "cyan4", size = 1.4))
 
 update_geom_defaults("density", 
                      list(color = "midnightblue", fill =  "midnightblue",
@@ -238,7 +238,6 @@ ggpubr::ggarrange(
 
 ```
 
-
 ```{r fig.cap = "A teljes korpusz leggyakoribb szavai, havonta", fig.height=10}
 dat_words_monthly %>% 
   group_by(date, words) %>% 
@@ -344,7 +343,6 @@ sent_dictionary %>%
   filter(n == 2)
 ```
 
-
 ```{r}
 sent_dictionary %>% 
   count(word, sent) %>% 
@@ -361,7 +359,6 @@ sent_dictionary %>%
 
 
 ```
-
 
 ```{r fig.height=6, fig.cap='Szentimenttel bíró szavakkal korreláló szavak hálója'}
 library(ggraph)
@@ -619,6 +616,64 @@ ggplot(data = topic_descript_df) +
 
 ```
 
+```{r fig.height = 10}
+dat_sentiment %>% 
+  left_join(topic_name, c("top_topic" = "topic")) %>% 
+  group_by(topic_name) %>% 
+  group_modify(~ mutate(.x, avg = mean(sent_mean, na.rm = T))) %>% 
+  ungroup() %>% 
+  mutate(topic_name = fct_reorder(topic_name, avg)) %>% 
+  ggplot(aes(sent_mean)) + 
+  geom_histogram(color = "black", fill = "cyan4", alpha = .6) +
+  geom_vline(aes(xintercept = avg), color = "red", lty = 2, size = 1.2) +
+  facet_wrap(~ topic_name, scales = "free_y", ncol = 1)
+```
+
+```{r fig.height = 10}
+dat_sentiment %>% 
+  left_join(topic_name, c("top_topic" = "topic")) %>% 
+  group_by(topic_name) %>% 
+  group_modify(~ mutate(.x, avg = mean(sent_mean, na.rm = T))) %>% 
+  ungroup() %>% 
+  mutate(topic_name = fct_reorder(topic_name, avg)) %>% 
+  filter(sent_n > 20) %>% 
+  ggplot(aes(sent_mean)) + 
+  geom_histogram(color = "black", fill = "cyan4", alpha = .6) +
+  geom_vline(aes(xintercept = avg), color = "red", lty = 2, size = 1.2) +
+  facet_wrap(~ topic_name, scales = "free_y", ncol = 1)
+```
+
+```{r fig.cap="Correlation matrix of topics' gamma"}
+dat_topics %>% 
+  select(starts_with("topic")) %>% 
+  cor() %>% 
+  data.frame() %>% 
+  rownames_to_column(var = "x") %>% 
+  pivot_longer(-x, names_to = "y") %>%
+  mutate_at(1:2, ~ as.numeric(str_remove_all(., "\\D"))) %>% 
+  left_join(topic_name, by = c("x" = "topic")) %>% 
+  left_join(topic_name, by = c("y" = "topic")) %>% 
+  select(-(1:2)) %>% 
+  rename_all(~ str_remove(., "topic_name.")) %>% 
+  filter(y < x) %>% 
+  ggplot(aes(x, y, fill = value)) +
+  geom_tile(color = "black") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+```{r fig.height=18}
+dat_topics %>% 
+  mutate(date = ym(str_sub(as.character(date), end = -4))) %>% 
+  left_join(topic_name, by = c("top_topic" = "topic")) %>% 
+  ggplot(aes(date, fill = topic_name)) + 
+  geom_bar(color = "black", position = position_fill()) + 
+  facet_wrap(~ country, ncol = 3) + 
+  scale_fill_viridis_d() +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1)
+  )
+```
+
 # Econometrics
 
 ## Descriptive statistics
@@ -649,8 +704,6 @@ dat_plm <- dat_eco_sent %>%
   replace_na(list(cases = 0, death = 0, new_cases = 0, new_deaths = 0)) %>% 
   filter(!is.na(sentiment))
 ```
-
-
 
 ```{r fig.cap = "Regressziós fa"}
 # Regression tree -----------------------------------------------------------------------
@@ -715,4 +768,3 @@ pwalk(list(model = pull(panel_models, within),
           print()
       })
 ```
-

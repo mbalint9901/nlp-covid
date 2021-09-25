@@ -228,7 +228,14 @@ dat_words_monthly %>%
   labs(x = "Word frequency ratio", y = NULL)
 ```
 
-<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-4-1.png" title="A teljes korpusz leggyakoribb szavai, havonta" alt="A teljes korpusz leggyakoribb szavai, havonta" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-4-1.png" alt="A teljes korpusz leggyakoribb szavai, havonta"  />
+<p class="caption">
+A teljes korpusz leggyakoribb szavai, havonta
+</p>
+
+</div>
 
 ## The pandemic
 
@@ -306,7 +313,14 @@ dat_covid %>%
   }
 ```
 
-<img src="CoronaSentiment_files/figure-gfm/timeline_plotting-1.png" title="Az új esetek száma és a szentimentet tartalmazó szavak száma naponta" alt="Az új esetek száma és a szentimentet tartalmazó szavak száma naponta" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="CoronaSentiment_files/figure-gfm/timeline_plotting-1.png" alt="Az új esetek száma és a szentimentet tartalmazó szavak száma naponta"  />
+<p class="caption">
+Az új esetek száma és a szentimentet tartalmazó szavak száma naponta
+</p>
+
+</div>
 
 # Text analysis
 
@@ -413,7 +427,14 @@ dat_sentiment_daily %>%
   labs(y = "Sentiment", x = NULL)
 ```
 
-<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-9-1.png" title="A szentiment alakulása országonként" alt="A szentiment alakulása országonként" angle=90 style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-9-1.png" alt="A szentiment alakulása országonként" angle=90 />
+<p class="caption">
+A szentiment alakulása országonként
+</p>
+
+</div>
 
 ## TF-IDF
 
@@ -457,7 +478,14 @@ dat_words_monthly %>%
   labs(x = "TF-IDF", y = NULL)
 ```
 
-<img src="CoronaSentiment_files/figure-gfm/tf_idf_per_month-1.png" title="A cikkekben havonta leginkább jellemző szavak, TF-IDF értékek alapján" alt="A cikkekben havonta leginkább jellemző szavak, TF-IDF értékek alapján" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="CoronaSentiment_files/figure-gfm/tf_idf_per_month-1.png" alt="A cikkekben havonta leginkább jellemző szavak, TF-IDF értékek alapján"  />
+<p class="caption">
+A cikkekben havonta leginkább jellemző szavak, TF-IDF értékek alapján
+</p>
+
+</div>
 
 ## Topic model
 
@@ -475,7 +503,14 @@ ggplot(topic_models, aes(n_topic, loglike)) +
   labs(x = 'Number of topics', y = 'Loglikelihood')
 ```
 
-<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-10-1.png" title="Finding the optimal number of topics for modelling" alt="Finding the optimal number of topics for modelling" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-10-1.png" alt="Finding the optimal number of topics for modelling"  />
+<p class="caption">
+Finding the optimal number of topics for modelling
+</p>
+
+</div>
 
 ``` r
 mod_topic <- topic_models[["model"]][[11]]
@@ -499,7 +534,14 @@ tidy(mod_topic, matrix = "beta") %>%
   labs(x = expression(beta), y = NULL)
 ```
 
-<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-12-1.png" title="Leggyakoribb szavak topikonként" alt="Leggyakoribb szavak topikonként" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-12-1.png" alt="Leggyakoribb szavak topikonként"  />
+<p class="caption">
+Leggyakoribb szavak topikonként
+</p>
+
+</div>
 
 ``` r
 #TODO labels as topic names
@@ -557,7 +599,14 @@ dat_topics %>%
   )
 ```
 
-<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-14-1.png" title="Topikok relatív megoszlásának időbeni dinamikája" alt="Topikok relatív megoszlásának időbeni dinamikája" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-14-1.png" alt="Topikok relatív megoszlásának időbeni dinamikája"  />
+<p class="caption">
+Topikok relatív megoszlásának időbeni dinamikája
+</p>
+
+</div>
 
 ``` r
 topic_descript_df <- tibble( 
@@ -621,7 +670,87 @@ ggplot(data = topic_descript_df) +
   )
 ```
 
-<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-15-1.png" title="Topikok jellemzése szentiment, dátum és gyakoriság szerint" alt="Topikok jellemzése szentiment, dátum és gyakoriság szerint" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-15-1.png" alt="Topikok jellemzése szentiment, dátum és gyakoriság szerint"  />
+<p class="caption">
+Topikok jellemzése szentiment, dátum és gyakoriság szerint
+</p>
+
+</div>
+
+``` r
+dat_sentiment %>% 
+  left_join(topic_name, c("top_topic" = "topic")) %>% 
+  group_by(topic_name) %>% 
+  group_modify(~ mutate(.x, avg = mean(sent_mean, na.rm = T))) %>% 
+  ungroup() %>% 
+  mutate(topic_name = fct_reorder(topic_name, avg)) %>% 
+  ggplot(aes(sent_mean)) + 
+  geom_histogram(color = "black", fill = "cyan4", alpha = .6) +
+  geom_vline(aes(xintercept = avg), color = "red", lty = 2, size = 1.2) +
+  facet_wrap(~ topic_name, scales = "free_y", ncol = 1)
+```
+
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-16-1.png" style="display: block; margin: auto;" />
+
+``` r
+dat_sentiment %>% 
+  left_join(topic_name, c("top_topic" = "topic")) %>% 
+  group_by(topic_name) %>% 
+  group_modify(~ mutate(.x, avg = mean(sent_mean, na.rm = T))) %>% 
+  ungroup() %>% 
+  mutate(topic_name = fct_reorder(topic_name, avg)) %>% 
+  filter(sent_n > 20) %>% 
+  ggplot(aes(sent_mean)) + 
+  geom_histogram(color = "black", fill = "cyan4", alpha = .6) +
+  geom_vline(aes(xintercept = avg), color = "red", lty = 2, size = 1.2) +
+  facet_wrap(~ topic_name, scales = "free_y", ncol = 1)
+```
+
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-17-1.png" style="display: block; margin: auto;" />
+
+``` r
+dat_topics %>% 
+  select(starts_with("topic")) %>% 
+  cor() %>% 
+  data.frame() %>% 
+  rownames_to_column(var = "x") %>% 
+  pivot_longer(-x, names_to = "y") %>%
+  mutate_at(1:2, ~ as.numeric(str_remove_all(., "\\D"))) %>% 
+  left_join(topic_name, by = c("x" = "topic")) %>% 
+  left_join(topic_name, by = c("y" = "topic")) %>% 
+  select(-(1:2)) %>% 
+  rename_all(~ str_remove(., "topic_name.")) %>% 
+  filter(y < x) %>% 
+  ggplot(aes(x, y, fill = value)) +
+  geom_tile(color = "black") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+<div class="figure" style="text-align: center">
+
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-18-1.png" alt="Correlation matrix of topics' gamma"  />
+<p class="caption">
+Correlation matrix of topics’ gamma
+</p>
+
+</div>
+
+``` r
+dat_topics %>% 
+  mutate(date = ym(str_sub(as.character(date), end = -4))) %>% 
+  left_join(topic_name, by = c("top_topic" = "topic")) %>% 
+  ggplot(aes(date, fill = topic_name)) + 
+  geom_bar(color = "black", position = position_fill()) + 
+  facet_wrap(~ country, ncol = 3) + 
+  scale_fill_viridis_d() +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1)
+  )
+```
+
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-19-1.png" style="display: block; margin: auto;" />
 
 # Econometrics
 
@@ -665,7 +794,14 @@ dat_plm %>%
   rattle::fancyRpartPlot(palettes = 'PuRd', sub = NULL)
 ```
 
-<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-17-1.png" title="Regressziós fa" alt="Regressziós fa" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-21-1.png" alt="Regressziós fa"  />
+<p class="caption">
+Regressziós fa
+</p>
+
+</div>
 
 ``` r
 dat_plm %>% 
@@ -681,7 +817,15 @@ dat_plm %>%
   labs(x = 'Economic Sentiment Index', y = 'Media sentiment', fill = NULL)
 ```
 
-<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-18-1.png" title="A hírekben megjelenő szentiment és gazdaság érzékelési index közötti kapcsolat" alt="A hírekben megjelenő szentiment és gazdaság érzékelési index közötti kapcsolat" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-22-1.png" alt="A hírekben megjelenő szentiment és gazdaság érzékelési index közötti kapcsolat"  />
+<p class="caption">
+A hírekben megjelenő szentiment és gazdaság érzékelési index közötti
+kapcsolat
+</p>
+
+</div>
 
 ## Panel models
 
@@ -708,11 +852,11 @@ panel_models <- tibble(
 knitr::kable(select(panel_models, -pooling, -within))
 ```
 
-| formula                                     | pooltest_pvalue |  r_within |
-|:--------------------------------------------|----------------:|----------:|
-| sentiment \~ death + eco                    |       0.0005297 | 0.2343142 |
-| sentiment \~ death + season + eco + death:t |       0.0000000 | 0.6800783 |
-| sentiment \~ death + eco + death:t          |       0.0003009 | 0.2622714 |
+| formula                                     | pooltest\_pvalue | r\_within |
+|:--------------------------------------------|-----------------:|----------:|
+| sentiment \~ death + eco                    |        0.0005297 | 0.2343142 |
+| sentiment \~ death + season + eco + death:t |        0.0000000 | 0.6800783 |
+| sentiment \~ death + eco + death:t          |        0.0003009 | 0.2622714 |
 
 ``` r
 pwalk(list(model = pull(panel_models, within), 
