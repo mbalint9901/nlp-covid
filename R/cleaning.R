@@ -7,7 +7,10 @@ library(geofacet)
 library(tidytext)
 library(tm)
 
-WD <- getwd()
+
+WD <- getwd() %>% 
+  gsub(pattern = "nlp-covid.*", replacement = "nlp-covid")
+
 setwd(str_c(WD, "/data/raw"))
 
 # greece --------------------------------------------------------
@@ -259,7 +262,9 @@ portugal <- read_excel("portugal2.xlsx") %>%
   ) %>% 
   select(-c(date2, date3, date4, date5)) %>% 
   filter(!is.na(date) & !is.na(text)) %>% 
-  mutate(text = str_remove_all(text, "\\.var.*() *;"))
+  mutate(
+    text = str_remove_all(text, "\\.var.*() *;")
+    )
 
 
 # lithuania -------------------------------------------------------------------------
@@ -353,6 +358,8 @@ romania <- read_excel("romania.xlsx") %>%
 
 # denmark ---------------------------------------------------------------------------
 
+load("Denmark_rawtext.RData")
+
 denmark <-  read_excel("denmark.xlsx") %>% 
   merge(select(Denmark_rawtext, date_orig = date, URL)) %>% 
   tibble() %>% 
@@ -421,7 +428,8 @@ hungary <- read_excel("hungary.xlsx") %>%
 
 # cyprus ----------------------------------------------------------------------------
 
-load("C:/rprojects/CoronaSentiment/scrapping RData/Cyprus_rawtext.RData")
+load("Cyprus_rawtext.RData")
+
 cyprus <- Cyprus_rawtext %>% 
   tibble() %>% 
   mutate(
@@ -598,92 +606,12 @@ dat <- dat %>%
   mutate(country = ifelse(str_detect(country, "BE"), "BE", country))
 
 
-# add sentiment ---------------------------------------------------------------------
-
-setwd("C:/rprojects/CoronaSentiment")
-
-dat_sentiment_daily <- tibble()  
-dat_sentiment_monthly <- tibble()  
-dat_words_monthly <- tibble()  
-
-sen_lex_nrc <- get_sentiments("nrc") %>% 
-  filter(sentiment %in% c("positive", "negative")) %>% 
-  mutate(value = ifelse(sentiment == "positive", 1, -1)) %>% 
-  select(word, value)
-
-sen_bing <- get_sentiments("bing") %>% 
-  filter(sentiment %in% c("positive", "negative")) %>% 
-  mutate(value = ifelse(sentiment == "positive", 1, -1)) %>% 
-  select(word, value)
-
-modified_bing <- read_excel("bing_to_score.xlsx") %>% 
-  select(word, value = 'my sentiment') %>% 
-  mutate(value = as.numeric(value)) %>% 
-  na.omit()
-
-for (i in seq_along(unique(pull(dat, country)))) {
-  
-  dat_sentiment <- dat %>% 
-    filter(country == unique(pull(dat, country))[i]) %>% 
-    select(date, text, country) %>% 
-    {left_join(unnest_tokens(., words, text), 
-               modified_bing, by=c("words"="word"))}  
-  
-  dat_sentiment_daily <- rbind(
-    dat_sentiment_daily,
-    dat_sentiment %>% 
-      group_by(date, country) %>% 
-      summarise(sentiment = mean(value, na.rm = T), n_total = n(), n = sum(!is.na(value))) %>% 
-      ungroup() %>% 
-      na.omit() %>% 
-      mutate(country = unique(pull(dat, country))[i])
-  )
-  
-  dat_sentiment_monthly <- rbind(
-    dat_sentiment_monthly,
-    dat_sentiment %>% 
-      na.omit() %>% 
-      mutate(
-        date = lubridate::ym(paste(lubridate::year(date), lubridate::month(date), sep = "-"))
-      ) %>% 
-      group_by(date, country) %>% 
-      summarise(sentiment = mean(value, na.rm = T), n_total = n(), n = sum(!is.na(value))) %>% 
-      ungroup() %>% 
-      na.omit() %>% 
-      mutate(country = unique(pull(dat, country))[i])
-  )
-  
-  dat_words_monthly <- rbind(
-    dat_words_monthly,
-    dat_sentiment %>% 
-      select(-value) %>% 
-      mutate(
-        date = lubridate::ym(paste(lubridate::year(date), lubridate::month(date), sep = "-"))
-      ) %>% 
-      group_by(date, words) %>% 
-      summarise(n = n()) %>% 
-      ungroup() %>% 
-      mutate(country = unique(pull(dat, country))[i])
-  )
-  
-}
-
-
 # save ------------------------------------------------------------------------------
 
-setwd(str_c(WD, "/data"))
-
+for (i in 1:12) {
+  
 dat %>% 
-  mutate(
-    r = row_number(),
-    r = cut(r, breaks = 6, labels = F)
-  ) %>% 
-  group_by(r) %>% 
-  group_map(.keep = T, ~ saveRDS(select(.x, -r), str_c("dat_", first(.x$r), ".RDS")))
-
-
-
-# save(list = c('dat', 'dat_sentiment_daily', 'dat_sentiment_monthly',  'dat_covid_monthly', 'dat_words_monthly', 'dat_covid', 'Hungary_rawtext', 'dat_covid_monthly', 'dat_eco_sent', 'dat_unemployment', 'mygrid'), 
-     # file = "C:/rprojects/CoronaSentiment/dat.RData")
-
-setwd(WD)
+  filter(cut(row_number(), 12, F) == i) %>% 
+  write_rds(file = str_c(WD, "/data/dat_", i, ".RDS"))
+  
+}
