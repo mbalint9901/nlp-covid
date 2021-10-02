@@ -344,6 +344,7 @@ sent_dictionary %>%
 ```
 
 ```{r}
+
 sent_dictionary %>% 
   count(word, sent) %>% 
   filter(n != 12) %>% 
