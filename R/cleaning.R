@@ -263,7 +263,8 @@ portugal <- read_excel("portugal2.xlsx") %>%
   select(-c(date2, date3, date4, date5)) %>% 
   filter(!is.na(date) & !is.na(text)) %>% 
   mutate(
-    text = str_remove_all(text, "\\.var.*() *;")
+    text = str_remove_all(text, "\\.var.*() *;"),
+    text = gsub(pattern = "The disease is transmitted by a new coronavirus.*", replacement = "", text)
     )
 
 
@@ -491,6 +492,7 @@ latvia <- read_excel("latvia.xlsx") %>%
 # uk --------------------------------------------------------------------------------
 
 load("uk_rawtext.RData")
+
 uk <- uk_rawtext %>% 
   mutate(date = dmy(date))
 
@@ -535,7 +537,8 @@ netherlands <- read_excel("netherlands.xlsx") %>%
 
 # merge ---------------------------------------------------------
 
-dat <- greece %>% mutate(country = "EL") %>% 
+dat <- greece %>% 
+  mutate(country = "EL") %>% 
   rbind(mutate(norway, country = "NO")) %>% 
   rbind(mutate(bulgaria, country = "BG")) %>% 
   rbind(mutate(finland, country = "FI")) %>% 

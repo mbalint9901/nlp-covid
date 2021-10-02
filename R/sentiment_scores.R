@@ -4,7 +4,7 @@ library(tidytext)
 WD <- getwd()
 
 dat <- list.files(str_c(WD, "/data")) %>% 
-  keep(~ str_detect(., "dat_\\d.RDS")) %>% 
+  keep(~ str_detect(., "dat_\\d+.RDS")) %>% 
   {str_c(WD, "/data/", .)} %>% 
   map(readRDS) %>% 
   reduce(rbind)
