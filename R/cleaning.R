@@ -59,7 +59,6 @@ greece <- greece %>%
   ) %>% 
   select(-r, -date2)
 
-
 # norway --------------------------------------------------------
 
 norway <- readxl::read_excel("norway.xlsx") %>%
@@ -68,12 +67,10 @@ norway <- readxl::read_excel("norway.xlsx") %>%
     date = lubridate::mdy(date)
   )
 
-
 # bulgaria ------------------------------------------------------
 
 bulgaria <- readxl::read_excel("bulgaria.xlsx") %>% 
   mutate(date = lubridate::mdy(date))
-
 
 # finland -------------------------------------------------------
 
@@ -167,7 +164,6 @@ f.remove_writer <- function(x) {
   }
 }
 
-
 italy <- read_excel("italy2.xlsx")
 
 
@@ -227,6 +223,7 @@ czech <- read_excel("czech.xlsx") %>%
 # portugal --------------------------------------------------------------------------
 
 Sys.setlocale("LC_ALL","English")
+
 portugal <- read_excel("portugal.xlsx") %>% 
   mutate(
     date2 = as.Date(date, format="%d %B %Y"),
@@ -576,6 +573,9 @@ dat <- greece %>%
     text = str_replace_all(text, '\"', " "),
     text = str_replace_all(text, '«', " "),
     text = str_replace_all(text, '»', " "), 
+    text = str_remove_all(text, "Your browser does not allow viewing of this content."),
+    text = str_remove_all(text, "Your browser does not allow viewing this content."),
+    text = str_remove_all(text, "Your browser does not allow you to view this content."),
     title = str_replace_all(title, '\"', " ")
   ) %>% 
   filter(
