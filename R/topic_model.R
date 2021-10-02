@@ -25,5 +25,5 @@ dat_docmatrix <- dat %>%
 for (i in 2:16) {
   message(i)
   mod <- LDA(x = dat_docmatrix, k = i, control = list(seed = 2021))
-  save(list(c("mod"), file = str_c(WD, "/data/topic_models/mod", i, ".RData")))
+  save(list = c("mod"), file = str_c(WD, "/data/topic_models/topic_model", i, ".RData"))
 }
