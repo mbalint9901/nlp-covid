@@ -478,6 +478,27 @@ dat_words_monthly %>%
 
 ## Topic model
 
+```{r}
+topic_models <- list.files(str_c(WD, "/data/topic_models"), 
+           pattern = "topic_model", 
+           full.names = TRUE) %>% 
+  map(function(x) {load(x); return (mod)}) %>% 
+  enframe(name = NULL, value = "model") %>% 
+  mutate(k = map_int(model, "k")) %>% 
+  arrange(k)
+```
+
+```{r}
+topic_models %>% 
+  mutate(
+    loglike = map_dbl(model, topicmodels::logLik)
+  ) %>% 
+  ggplot() + 
+  aes(k, loglike) + 
+  geom_line()
+```
+
+
 ```{r fig.cap='Finding the optimal number of topics for modelling', fig.height=2.5}
 topic_models <- tibble(n_topic = c(2:14, 16)) %>% # number 15 is missing
   mutate(
