@@ -38,6 +38,6 @@ write_rds(dat_docmatrix, file = str_c(WD, "/data/docmatrix.RDS"))
 
 for (i in k) {
   message(i)
-  mod <- stm(dat_docmatrix, K = i, control = list(seed = 2021))
+  mod <- stm(dat_docmatrix, K = i)
   save(list = c("mod"), file = str_c(WD, "/data/topic_models/stm_topic_model", i, ".RData"))
 }
