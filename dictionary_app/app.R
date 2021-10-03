@@ -2,23 +2,14 @@ library(shiny)
 library(shinydashboard)
 library(tidyverse)
 
-# RESTART -----------------------------------
-
-# sentence_sample %>%
-#   select(word, topic_name) %>%
-#   ungroup() %>%
-#   left_join(bing_df) %>%
-#   write.csv("new_sentiment.csv")
-# ------------------------------------------
-
 sentence_sample <- read_rds("sentence_sample.RDS")
 bing_freq <- read_rds("bing_freq.RDS")
 bing_df <- tidytext::get_sentiments("bing")
 
-new_sentiment_df <- read.csv("new_sentiment.csv") %>% 
-  mutate(sentiment = ifelse(sentiment == "NA", NA, sentiment)) %>% 
-  replace_na(list(sentiment = "neutral")) %>% 
-  select(-1) # remove row number
+modified_sentiment_dictionary <- read_delim("modified_sentiment_dictionary.csv", 
+                                            ";", escape_double = FALSE, trim_ws = TRUE) %>% 
+  select(-X14) %>% 
+  pivot_longer(-1)
 
 ui <- dashboardPage(
   dashboardHeader(title = "Words check"),
@@ -69,52 +60,26 @@ server <- function(input, output, session) {
                color = ifelse(. == "negative", "red", "green"))}
   })
   
-  output$new_sentiment <- renderUI({
-    input$selelected_word
-    input$selected_topic
-    
-    value <- new_sentiment_df %>% 
-      filter(word  == input$selected_word, topic_name == input$selected_topic) %>% 
-      pull(sentiment)
-    
-    selectInput(choices = c("neutral", "positive", "negative"), 
-                selected = value,
-                label = "New sentiment:", 
-                inputId = "new_sentiment")
-  })
   
   output$new_sentiment_infobox <- renderInfoBox({
+    new_sentiment <- modified_sentiment_dictionary %>% 
+      filter(word == input$selected_word, name == input$selected_topic) %>% 
+      pull(value)
     
-    infoBox(title = "New value", value = input$new_sentiment, icon = icon("wpexplorer"), 
-            color = ifelse(input$new_sentiment == "negative", "red", "green"))
+    infoBox(title = "New value", 
+            value = case_when(
+              new_sentiment == 1 ~ "positive",
+              new_sentiment == 0 ~ "neutral",
+              new_sentiment == -1 ~ "negative"
+            ),
+            icon = icon("wpexplorer"), 
+            color = case_when (
+              new_sentiment == 1 ~ "green",
+              new_sentiment == 0 ~ "yellow",
+              new_sentiment == -1 ~ "red"
+            ))
   })
   
-  observeEvent(input$new_sentiment, {
-    
-    old_value <- new_sentiment_df %>% 
-      filter(word  == input$selected_word, topic_name == input$selected_topic) %>% 
-      pull(sentiment)
-    
-    if (old_value != input$new_sentiment) {
-      
-      out <-new_sentiment_df %>%
-        filter(!(word == input$selected_word & topic_name == input$selected_topic)) %>%
-        rbind(
-          data.frame(
-            word = input$selected_word,
-            topic_name = input$selected_topic,
-            sentiment = input$new_sentiment
-          ) 
-        )
-      
-      write.csv(out, "new_sentiment.csv")
-      message("re-write csv!")
-      
-    new_sentiment <<- out
-    }
-    
-    
-  })
 }
 
 shinyApp(ui, server)
