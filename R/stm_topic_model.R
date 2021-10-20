@@ -8,7 +8,7 @@ set.seed(2021)
 WD <- getwd() %>% 
   gsub(pattern = "nlp-covid.*", replacement = "nlp-covid")
 
-if (!("k" %in% ls())) k <- 3:16 # default value
+if (!("k" %in% ls())) k <- c(17:19, seq(20,60,by=5)) # default value
 
 message(k)
 
@@ -18,23 +18,23 @@ dat <- list.files(str_c(WD, "/data")) %>%
   map(readRDS) %>% 
   bind_rows()
 
-dat_docmatrix <- dat %>% 
-  group_by(country) %>% 
-  group_modify(~ sample_n(.x, 1000, replace = FALSE)) %>% 
-  ungroup() %>% 
-  transmute(r = row_number(), text) %>% 
-  unnest_tokens(word, text) %>%
-  anti_join(get_stopwords()) %>%
-  filter(!str_detect(word, "[0-9]+")) %>%
-  add_count(word) %>%
-  filter(n > 100) %>%
-  select(-n)
+# dat_docmatrix <- dat %>% 
+#   group_by(country) %>% 
+#   group_modify(~ sample_n(.x, 1000, replace = FALSE)) %>% 
+#   ungroup() %>% 
+#   transmute(r = row_number(), text) %>% 
+#   unnest_tokens(word, text) %>%
+#   #anti_join(get_stopwords()) %>%
+#   filter(!str_detect(word, "[0-9]+")) %>%
+#   add_count(word) %>%
+#   filter(n > 100) %>%
+#   select(-n)
+# 
+# dat_docmatrix <- dat_docmatrix %>%
+#   count(r, word) %>%
+#   cast_sparse(r, word, n)
 
-dat_docmatrix <- dat_docmatrix %>%
-  count(r, word) %>%
-  cast_sparse(r, word, n)
-
-write_rds(dat_docmatrix, file = str_c(WD, "/data/docmatrix.RDS"))
+dat_docmatrix <- readRDS(file = str_c(WD, "/data/docmatrix.RDS"))
 
 for (i in k) {
   message(i)
