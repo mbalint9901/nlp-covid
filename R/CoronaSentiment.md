@@ -66,7 +66,7 @@ load(str_c(WD, "/data/sentiment_scores_results.RData"))
 # dat_sentiment_monthly <- read_rds(str_c(WD, "/data/dat_sentiment_monthly.RDS")) %>% 
 #   select(date, country, sentiment = new_sentiment, n = new_n, n_total = n)
 # 
-# dat_words_monthly <- read_rds(str_c(WD, "/data/dat_words_monthly.rds"))
+dat_words_monthly <- read_rds(str_c(WD, "/data/dat_words_monthly.RDS"))
 
 load(str_c(WD, "/data/raw/Germany_rawtext.RData"))
 
@@ -249,7 +249,18 @@ ggpubr::ggarrange(
 )
 ```
 
-    ## Error in filter(., country == "DE"): object 'dat_words_monthly' not found
+<div class="figure" style="text-align: center">
+
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-3-1.png" alt="Leggyakrabban előforduló szavak a magyar nyelvű cikkekben a fordítást megelőzően és azt követően."  />
+
+<p class="caption">
+
+Leggyakrabban előforduló szavak a magyar nyelvű cikkekben a fordítást
+megelőzően és azt követően.
+
+</p>
+
+</div>
 
 ``` r
 dat_words_monthly %>% 
@@ -269,7 +280,17 @@ dat_words_monthly %>%
   labs(x = "Word frequency ratio", y = NULL)
 ```
 
-    ## Error in group_by(., date, words): object 'dat_words_monthly' not found
+<div class="figure" style="text-align: center">
+
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-4-1.png" alt="A teljes korpusz leggyakoribb szavai, havonta"  />
+
+<p class="caption">
+
+A teljes korpusz leggyakoribb szavai, havonta
+
+</p>
+
+</div>
 
 ## The pandemic
 
@@ -649,7 +670,18 @@ dat_words_monthly %>%
                    max.words = 100)
 ```
 
-    ## Error in group_by(., country, words): object 'dat_words_monthly' not found
+<div class="figure" style="text-align: center">
+
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-10-1.png" alt="Leggyakrabban előforduló pozitív és negatív szentimenttel rendelkező szavak"  />
+
+<p class="caption">
+
+Leggyakrabban előforduló pozitív és negatív szentimenttel rendelkező
+szavak
+
+</p>
+
+</div>
 
 ``` r
 library(ggraph)
@@ -793,7 +825,17 @@ dat_words_monthly %>%
   labs(x = "TF-IDF", y = NULL)
 ```
 
-    ## Error in filter(., words != "feff"): object 'dat_words_monthly' not found
+<div class="figure" style="text-align: center">
+
+<img src="CoronaSentiment_files/figure-gfm/tf_idf_per_month-1.png" alt="A cikkekben havonta leginkább jellemző szavak, TF-IDF értékek alapján"  />
+
+<p class="caption">
+
+A cikkekben havonta leginkább jellemző szavak, TF-IDF értékek alapján
+
+</p>
+
+</div>
 
 # Econometrics
 

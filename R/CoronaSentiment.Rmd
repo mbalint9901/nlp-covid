@@ -107,7 +107,7 @@ load(str_c(WD, "/data/sentiment_scores_results.RData"))
 # dat_sentiment_monthly <- read_rds(str_c(WD, "/data/dat_sentiment_monthly.RDS")) %>% 
 #   select(date, country, sentiment = new_sentiment, n = new_n, n_total = n)
 # 
-# dat_words_monthly <- read_rds(str_c(WD, "/data/dat_words_monthly.rds"))
+dat_words_monthly <- read_rds(str_c(WD, "/data/dat_words_monthly.RDS"))
 
 load(str_c(WD, "/data/raw/Germany_rawtext.RData"))
 
