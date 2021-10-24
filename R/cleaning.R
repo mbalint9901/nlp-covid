@@ -7,11 +7,8 @@ library(geofacet)
 library(tidytext)
 library(tm)
 
-
-WD <- getwd() %>% 
-  gsub(pattern = "nlp-covid.*", replacement = "nlp-covid")
-
-setwd(str_c(WD, "/data/raw"))
+WD <- getwd()
+setwd(str_c(WD, "/data/raw & temporary/"))
 
 # greece --------------------------------------------------------
 
@@ -48,6 +45,12 @@ greece <- greece %>%
     text = gsub("Reportage-text-photo: ", "", text),
     text = str_remove_all(text, 'Source:*'),
     text = str_remove_all(text, 'SOURCE'),
+    text = str_remove_all(text, 'απε'),
+    text = str_remove_all(text, 'ΑΠΕ'),
+    text = str_remove_all(text, 'ΜΠΕ'),
+    text = str_remove_all(text, 'ΕRT'),
+    text = str_remove_all(text, 'ERT1'),
+    text = str_remove_all(text, 'AFP'),
     text = str_remove_all(text, 'Reuters'),
     text = gsub('Related news.*', '', text),
     text = gsub('Share this article', '', text),
@@ -59,6 +62,7 @@ greece <- greece %>%
   ) %>% 
   select(-r, -date2)
 
+
 # norway --------------------------------------------------------
 
 norway <- readxl::read_excel("norway.xlsx") %>%
@@ -67,10 +71,12 @@ norway <- readxl::read_excel("norway.xlsx") %>%
     date = lubridate::mdy(date)
   )
 
+
 # bulgaria ------------------------------------------------------
 
 bulgaria <- readxl::read_excel("bulgaria.xlsx") %>% 
   mutate(date = lubridate::mdy(date))
+
 
 # finland -------------------------------------------------------
 
@@ -164,6 +170,7 @@ f.remove_writer <- function(x) {
   }
 }
 
+
 italy <- read_excel("italy2.xlsx")
 
 
@@ -191,7 +198,6 @@ italy <- reduce(italy, rbind) %>%
   mutate(text = str_remove_all(text, "kwait.*[);\\]]{3}")) %>% 
   mutate(text = str_remove_all(text, "kwait.*pl_listen")) %>% 
   mutate(text = str_remove_all(text, "kwait.*pm_list")) %>% 
-  mutate(text = str_remove_all(text, "© reproduction reserved")) %>% 
   mutate(text = str_remove_all(text, "kwait.*[aA]dref *="))
 
 
@@ -223,7 +229,6 @@ czech <- read_excel("czech.xlsx") %>%
 # portugal --------------------------------------------------------------------------
 
 Sys.setlocale("LC_ALL","English")
-
 portugal <- read_excel("portugal.xlsx") %>% 
   mutate(
     date2 = as.Date(date, format="%d %B %Y"),
@@ -259,10 +264,7 @@ portugal <- read_excel("portugal2.xlsx") %>%
   ) %>% 
   select(-c(date2, date3, date4, date5)) %>% 
   filter(!is.na(date) & !is.na(text)) %>% 
-  mutate(
-    text = str_remove_all(text, "\\.var.*() *;"),
-    text = gsub(pattern = "The disease is transmitted by a new coronavirus.*", replacement = "", text)
-    )
+  mutate(text = str_remove_all(text, "\\.var.*() *;"))
 
 
 # lithuania -------------------------------------------------------------------------
@@ -270,7 +272,7 @@ portugal <- read_excel("portugal2.xlsx") %>%
 lithuania <- read_excel("lithuania.xlsx") %>% 
   mutate(
     date = mdy(date),
-    text = str_remove_all(text, str_c(c('lrt.lt', "read more about it here."), collapse="|")),
+    text = str_remove_all(text, str_c(c('lrt.lt'), collapse="|"))
   )
 
 
@@ -356,8 +358,7 @@ romania <- read_excel("romania.xlsx") %>%
 
 # denmark ---------------------------------------------------------------------------
 
-load("Denmark_rawtext.RData")
-
+load("C:/rprojects/CoronaSentiment/scrapping RData/Denmark_rawtext.RData")
 denmark <-  read_excel("denmark.xlsx") %>% 
   merge(select(Denmark_rawtext, date_orig = date, URL)) %>% 
   tibble() %>% 
@@ -375,10 +376,8 @@ croatia <- read_excel("croatia.xlsx") %>%
     date = ifelse(is.na(date2), 
                   as.character(as.Date(as.numeric(date), origin = "1899-12-30")),
                   as.character(date2)),
-    date = ymd(date),
-    text = str_remove_all(text, "your browser does not allow you to view this content.")
-  ) %>% 
-  select(-date2)
+    date = ymd(date)
+  ) %>% select(-date2)
 
 # austria ---------------------------------------------------------------------------
 
@@ -426,8 +425,7 @@ hungary <- read_excel("hungary.xlsx") %>%
 
 # cyprus ----------------------------------------------------------------------------
 
-load("Cyprus_rawtext.RData")
-
+load("C:/rprojects/CoronaSentiment/scrapping RData/Cyprus_rawtext.RData")
 cyprus <- Cyprus_rawtext %>% 
   tibble() %>% 
   mutate(
@@ -489,7 +487,6 @@ latvia <- read_excel("latvia.xlsx") %>%
 # uk --------------------------------------------------------------------------------
 
 load("uk_rawtext.RData")
-
 uk <- uk_rawtext %>% 
   mutate(date = dmy(date))
 
@@ -534,8 +531,7 @@ netherlands <- read_excel("netherlands.xlsx") %>%
 
 # merge ---------------------------------------------------------
 
-dat <- greece %>% 
-  mutate(country = "EL") %>% 
+dat <- greece %>% mutate(country = "EL") %>% 
   rbind(mutate(norway, country = "NO")) %>% 
   rbind(mutate(bulgaria, country = "BG")) %>% 
   rbind(mutate(finland, country = "FI")) %>% 
@@ -573,24 +569,18 @@ dat <- greece %>%
     text = str_replace_all(text, '\"', " "),
     text = str_replace_all(text, '«', " "),
     text = str_replace_all(text, '»', " "), 
-    text = str_remove_all(text, "Your browser does not allow viewing of this content."),
-    text = str_remove_all(text, "Your browser does not allow viewing this content."),
-    text = str_remove_all(text, "Your browser does not allow you to view this content."),
-    title = str_replace_all(title, '\"', " ")
+    title = str_replace_all(title, '\"', " ") # TODO more special characters
   ) %>% 
   filter(
     !is.na(text) & text != "" & str_length(text) > 20
-  ) %>% 
-  arrange(date) %>% 
-  filter(!duplicated(URL)) %>% 
-  filter(!duplicated(str_c(country, date, text)))
+  )
 
 for (i in 2:(nrow(dat)-1)) { # imputing missing date values
   if (!is.na(dat$date[i])) {
     last_date <- dat$date[i]
   } else {
     dat[i, 1] <- dat %>% # if the following known date equals to the previous known one,
-      tail(-i) %>%                               # then input, in other case leave it
+      tail(-i) %>%                               # then imput, in other case leave it
       filter(!is.na(dat$date[i])) %>% 
       .[1, ] %>% 
       pull(date) %>% 
@@ -609,12 +599,92 @@ dat <- dat %>%
   mutate(country = ifelse(str_detect(country, "BE"), "BE", country))
 
 
-# save ------------------------------------------------------------------------------
+# add sentiment ---------------------------------------------------------------------
 
-for (i in 1:12) {
+setwd("C:/rprojects/CoronaSentiment")
+
+dat_sentiment_daily <- tibble()  
+dat_sentiment_monthly <- tibble()  
+dat_words_monthly <- tibble()  
+
+sen_lex_nrc <- get_sentiments("nrc") %>% 
+  filter(sentiment %in% c("positive", "negative")) %>% 
+  mutate(value = ifelse(sentiment == "positive", 1, -1)) %>% 
+  select(word, value)
+
+sen_bing <- get_sentiments("bing") %>% 
+  filter(sentiment %in% c("positive", "negative")) %>% 
+  mutate(value = ifelse(sentiment == "positive", 1, -1)) %>% 
+  select(word, value)
+
+modified_bing <- read_excel("bing_to_score.xlsx") %>% 
+  select(word, value = 'my sentiment') %>% 
+  mutate(value = as.numeric(value)) %>% 
+  na.omit()
+
+for (i in seq_along(unique(pull(dat, country)))) {
   
-dat %>% 
-  filter(cut(row_number(), 12, F) == i) %>% 
-  write_rds(file = str_c(WD, "/data/dat_", i, ".RDS"))
+  dat_sentiment <- dat %>% 
+    filter(country == unique(pull(dat, country))[i]) %>% 
+    select(date, text, country) %>% 
+    {left_join(unnest_tokens(., words, text), 
+               modified_bing, by=c("words"="word"))}  
+  
+  dat_sentiment_daily <- rbind(
+    dat_sentiment_daily,
+    dat_sentiment %>% 
+      group_by(date, country) %>% 
+      summarise(sentiment = mean(value, na.rm = T), n_total = n(), n = sum(!is.na(value))) %>% 
+      ungroup() %>% 
+      na.omit() %>% 
+      mutate(country = unique(pull(dat, country))[i])
+  )
+  
+  dat_sentiment_monthly <- rbind(
+    dat_sentiment_monthly,
+    dat_sentiment %>% 
+      na.omit() %>% 
+      mutate(
+        date = lubridate::ym(paste(lubridate::year(date), lubridate::month(date), sep = "-"))
+      ) %>% 
+      group_by(date, country) %>% 
+      summarise(sentiment = mean(value, na.rm = T), n_total = n(), n = sum(!is.na(value))) %>% 
+      ungroup() %>% 
+      na.omit() %>% 
+      mutate(country = unique(pull(dat, country))[i])
+  )
+  
+  dat_words_monthly <- rbind(
+    dat_words_monthly,
+    dat_sentiment %>% 
+      select(-value) %>% 
+      mutate(
+        date = lubridate::ym(paste(lubridate::year(date), lubridate::month(date), sep = "-"))
+      ) %>% 
+      group_by(date, words) %>% 
+      summarise(n = n()) %>% 
+      ungroup() %>% 
+      mutate(country = unique(pull(dat, country))[i])
+  )
   
 }
+
+
+# save ------------------------------------------------------------------------------
+
+setwd(str_c(WD, "/data"))
+
+dat %>% 
+  mutate(
+    r = row_number(),
+    r = cut(r, breaks = 6, labels = F)
+  ) %>% 
+  group_by(r) %>% 
+  group_map(.keep = T, ~ saveRDS(select(.x, -r), str_c("dat_", first(.x$r), ".RDS")))
+
+
+
+# save(list = c('dat', 'dat_sentiment_daily', 'dat_sentiment_monthly',  'dat_covid_monthly', 'dat_words_monthly', 'dat_covid', 'Hungary_rawtext', 'dat_covid_monthly', 'dat_eco_sent', 'dat_unemployment', 'mygrid'), 
+     # file = "C:/rprojects/CoronaSentiment/dat.RData")
+
+setwd(WD)

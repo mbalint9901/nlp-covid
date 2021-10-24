@@ -37,7 +37,38 @@ setwd(WD)
 
 # DFs from the cleaning.R file ==========================================================
 
-dat_words_monthly <- read_rds(str_c(WD, "/data/dat_words_monthly.rds"))
+dat <- list.files(str_c(WD, "/data/")) %>% 
+  keep(~ str_detect(., "dat_\\d+.RDS")) %>% 
+  {str_c(WD, "/data/", .)} %>% 
+  map(readRDS) %>% 
+  reduce(rbind)
+
+
+# Topic models ==========================================================================
+
+# Topic models calculated in -> topic_models.R <-
+# moved this calculations to different files due to the large computation time
+# Posterior estimation of each article with topic models is also computation heavy
+# >> find the estimation in -> dat_topics.R <-
+
+dat_topics <- read_rds(str_c(WD, "/data/dat_topics.rds"))
+
+# Sentiment scores  ==========================================================================
+
+# Sentiment scores are calculated by a dictionary based on topics -> sentiment_scores.R <-
+# moved this calculations to different files due to the large computation time
+
+load(str_c(WD, "/data/sentiment_scores_results.RData"))
+# 
+# dat_sentiment_daily <- read_rds(str_c(WD, "/data/dat_sentiment_daily.RDS")) %>% 
+#   select(date, country, sentiment =  new_sentiment, n = new_n, n_total = n)
+# 
+# dat_sentiment_monthly <- read_rds(str_c(WD, "/data/dat_sentiment_monthly.RDS")) %>% 
+#   select(date, country, sentiment = new_sentiment, n = new_n, n_total = n)
+# 
+dat_words_monthly <- read_rds(str_c(WD, "/data/dat_words_monthly.RDS"))
+
+load(str_c(WD, "/data/raw/Germany_rawtext.RData"))
 
 source(str_c(WD, "/R/data_setup.R")) # additional datasets available online
 
@@ -45,37 +76,20 @@ source(str_c(WD, "/R/data_setup.R")) # additional datasets available online
 # To ensure full reproducibility see the attached files at the corresponding
 # GitHub Repo: -> https://github.com/MarcellGranat/CoronaSentiment <-
 
-# Topic models ==========================================================================
-
-# Topic models calculated in -> topic_models.R <-
-# moved this calculations to different files due to the large computation time
-# Posterior estimation of each article with topic models is also computation heavy
-# >> find the estimation in -> topics_byarticle.R <-
-
-
-load(str_c(WD, "/data/topics_bydat.RData"))
-load(str_c(WD, "/data/raw/Germany_rawtext.RData"))
-load(str_c(WD, "/data/sentiment_scores_results.RData"))
 
 ### COVID-dictionary ####################################################################
 
 # own edited sentiment dictionary calibrated to COVID articles
 
-topic_name <- tibble(
-  topic = 1:12, topic_name = c(
-    "Researches", "Politics", "Statistics", "Public Life", "Public Institutions", 
-    "Economy", "Restrictions", "Vaccination", "Sport", "Travel", "Police Measures", 
-    "Mental Health"
-  )
-)
+bing_comparison <- read_delim(str_c(WD, "/data/sentiment_scores.csv"), 
+                              ";", escape_double = FALSE, trim_ws = TRUE)
 
-sent_dictionary <- read.csv(str_c(WD, "/data/modified_sentiment_dictionary.csv"), sep = ";") %>% 
-  tibble() %>% 
-  select(-X) %>% 
-  pivot_longer(-1) %>% 
-  set_names("word", "topic_name", "sent") %>% 
-  mutate(topic_name = str_replace_all(topic_name, "[.]", " ")) %>% 
-  left_join(topic_name)
+modified_bing <- bing_comparison  %>% 
+  select(word, value = 'my_sentiment_2') %>% 
+  na.omit()
+
+word_frequency <- read_delim(str_c(WD, "/data/word_frequency_by_topic.csv"), 
+                              ",", escape_double = FALSE, trim_ws = TRUE)
 ```
 
 ``` r
@@ -119,11 +133,7 @@ metadata_df <- dat %>%
   count(country) %>% 
   rename("Number of articles" = n) %>% 
   merge(metadata_df, by.x = "country", by.y = "Country code")
-```
 
-    ## Error in count(., country): object 'dat' not found
-
-``` r
 metadata_df <- dat %>% 
   group_by(country) %>% 
   mutate("Starting date" = as.character(ymd(min(date))), 
@@ -133,26 +143,55 @@ metadata_df <- dat %>%
   merge(metadata_df, by = "country") %>% 
   rename("Country code" = country) %>% 
   arrange(Country)
-```
 
-    ## Error in group_by(., country): object 'dat' not found
-
-``` r
 select(metadata_df, 'Country', "Media outlet", "State-financed", "Starting date", "End date", "Number of articles") %>% 
   arrange("Country") %>% 
   knitr::kable(caption = "Description of the downloaded data from 31 country's media outlets.",
                align = c('l', rep('c', 5)))
 ```
 
-    ## Error: Can't subset columns that don't exist.
-    ## x Column `Starting date` doesn't exist.
+| Country          |         Media outlet          | State-financed | Starting date |  End date  | Number of articles |
+| :--------------- | :---------------------------: | :------------: | :-----------: | :--------: | :----------------: |
+| Austria          |          Die Presse           |       No       |  2020-01-09   | 2021-01-31 |        6579        |
+| Belgium (Dutch)  |              VRT              |      Yes       |  2020-02-04   | 2021-01-31 |       10549        |
+| Belgium (French) |             RTBF              |      Yes       |  2020-02-04   | 2021-01-31 |       10549        |
+| Bulgaria         | Bulgarian National Television |      Yes       |  2020-03-07   | 2021-01-31 |        3188        |
+| Croatia          |         Večernji list         |       No       |  2020-01-28   | 2021-01-31 |        8236        |
+| Cyprus           |          Cyprus Mail          |       No       |  2020-01-20   | 2021-01-31 |        3375        |
+| Czech Republic   |        Česká televize         |      Yes       |  2020-03-05   | 2021-01-31 |        2997        |
+| Denmark          |           Politiken           |       No       |  2020-02-11   | 2021-01-31 |        2593        |
+| Estonia          |              ERR              |      Yes       |  2020-01-14   | 2021-01-31 |        3926        |
+| Finland          |           Yle News            |      Yes       |  2020-03-19   | 2021-01-31 |        9505        |
+| France           |           France 24           |      Yes       |  2020-01-06   | 2021-01-31 |        3001        |
+| Germany          |          DER SPIEGEL          |       No       |  2020-02-02   | 2021-01-31 |        8224        |
+| Greece           |              ERT              |      Yes       |  2020-02-18   | 2021-01-31 |        1283        |
+| Hungary          |           hirado.hu           |      Yes       |  2020-01-09   | 2021-01-31 |        9063        |
+| Iceland          |              RÚV              |      Yes       |  2020-02-01   | 2021-01-29 |        6366        |
+| Italy            |         la Repubblica         |       No       |  2020-01-11   | 2021-01-31 |       30686        |
+| Latvia           |              LSM              |      Yes       |  2020-02-27   | 2021-01-30 |        2670        |
+| Lithuania        |        LRT televizija         |      Yes       |  2020-01-20   | 2021-01-30 |       10817        |
+| Luxembourg       |          L’essentiel          |       No       |  2020-01-09   | 2021-01-31 |        1488        |
+| Malta            |              TVM              |      Yes       |  2020-03-13   | 2021-01-31 |        2504        |
+| Netherlands      |              NOS              |       No       |  2020-01-09   | 2021-01-31 |        4858        |
+| Norway           |              NRK              |      Yes       |  2020-01-06   | 2021-01-31 |        2862        |
+| Poland           |              TVP              |      Yes       |  2020-01-14   | 2021-01-31 |        8660        |
+| Portugal         |              RTP              |      Yes       |  2020-03-10   | 2021-01-31 |       24497        |
+| Romania          |              TVR              |      Yes       |  2020-02-22   | 2021-01-31 |        7646        |
+| Slovakia         |           Nový Čas            |       No       |  2020-02-06   | 2021-01-31 |       14800        |
+| Slovenia         |         RTV Slovenija         |      Yes       |  2020-01-09   | 2021-01-31 |        2494        |
+| Spain            |             RTVE              |      Yes       |  2020-01-16   | 2021-01-31 |        7182        |
+| Sweden           |              SVT              |      Yes       |  2020-01-22   | 2021-01-31 |        4351        |
+| Switzerland      |       SWI swissinfo.ch        |       No       |  2020-01-20   | 2021-01-31 |        1008        |
+| United Kingdom   |         The Guardian          |      Nem       |  2020-01-18   | 2021-01-27 |        3716        |
+
+Description of the downloaded data from 31 country’s media outlets.
 
 ## Google translate
 
 ``` r
 # Automatic translation =================================================================
 
-Germany_rawtext <- Germany_rawtext %>% 
+Germany_rawtext %<>% 
   select(text) %>% 
   unnest_tokens(words, text)
 
@@ -208,7 +247,18 @@ ggpubr::ggarrange(
 )
 ```
 
-    ## Error in is.data.frame(y): object 'modified_bing' not found
+<div class="figure" style="text-align: center">
+
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-3-1.png" alt="Leggyakrabban előforduló szavak a magyar nyelvű cikkekben a fordítást megelőzően és azt követően."  />
+
+<p class="caption">
+
+Leggyakrabban előforduló szavak a magyar nyelvű cikkekben a fordítást
+megelőzően és azt követően.
+
+</p>
+
+</div>
 
 ``` r
 dat_words_monthly %>% 
@@ -231,8 +281,11 @@ dat_words_monthly %>%
 <div class="figure" style="text-align: center">
 
 <img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-4-1.png" alt="A teljes korpusz leggyakoribb szavai, havonta"  />
+
 <p class="caption">
+
 A teljes korpusz leggyakoribb szavai, havonta
+
 </p>
 
 </div>
@@ -272,7 +325,7 @@ dat_covid %>%
   merge(
     dat_sentiment_daily %>% 
       group_by(date) %>% 
-      summarise(n_sent = sum(n)) %>% 
+      summarise(n_sentiment = sum(n)) %>% 
       ungroup(),
     all = T
   ) %>% 
@@ -284,24 +337,24 @@ dat_covid %>%
   tibble() %>% 
   mutate(
     new_cases = ifelse(is.na(new_cases), 0, new_cases),
-    n_sent = ifelse(is.na(n_sent), 0, n_sent),
+    n_sentiment = ifelse(is.na(n_sentiment), 0, n_sentiment),
     new_cases = zoo::rollmean(new_cases, 7, na.pad=TRUE),
-    n_sent = zoo::rollmean(n_sent, 7, na.pad=TRUE),
-    n_sent = ifelse(is.na(n_sent), 0, n_sent),
+    n_sentiment = zoo::rollmean(n_sentiment, 7, na.pad=TRUE),
+    n_sentiment = ifelse(is.na(n_sentiment), 0, n_sentiment),
     new_cases = ifelse(is.na(new_cases), 0, new_cases),
     date2 = ymd(ifelse(is.na(text), NA, as.character(date)))
   ) %>% 
   {
     
-    ggplot(., aes(x =date, y = new_cases, color = "Number of daily new cases")) +
+    ggplot(., aes(x =date, y = new_cases)) +
       geom_hline(yintercept = 0) +
-      geom_line() +
-      geom_line(aes(date, n_sent*2, color = "Number of words with sentiment")) + 
+      geom_line(color = "red") +
+      geom_line(aes(date, n_sentiment*0.1), color = "blue") + 
       scale_y_continuous(
         name = "Number of daily new cases",
-        sec.axis = sec_axis(~./2, name="Number of words with sentiment")
+        sec.axis = sec_axis(~./0.1, name="Number of words with sentiment")
       ) + 
-      geom_mark_circle(data = filter(., !is.na(text)), aes(x=date, y = n_sent, description = glue('"{text}"'),
+      geom_mark_circle(data = filter(., !is.na(text)), aes(x=date, y = n_sentiment, description = glue('"{text}"'),
                                                            label = glue("{date}:"), group = date), color = NA, 
                        expand = unit(2, "mm"), label.family = c("Oswald", "Poppins"), 
                        label.fontsize = 6,
@@ -316,41 +369,317 @@ dat_covid %>%
 <div class="figure" style="text-align: center">
 
 <img src="CoronaSentiment_files/figure-gfm/timeline_plotting-1.png" alt="Az új esetek száma és a szentimentet tartalmazó szavak száma naponta"  />
+
 <p class="caption">
+
 Az új esetek száma és a szentimentet tartalmazó szavak száma naponta
+
 </p>
 
 </div>
 
+``` r
+#TODO Color error javítása
+```
+
 # Text analysis
+
+## Topic model
+
+``` r
+dat_docmatrix<-readRDS(str_c(WD, "/data/topic_models/docmatrix.RDS"))
+ 
+topic_models <- tibble(n_topic = c(2:16)) %>%
+  mutate(
+    file_name = str_c(WD, '/data/topic_models/topic_model', n_topic, '.RData'),
+    # each RData contains one LDA model named as mod
+    model = map(file_name, function(x) {load(x); return(mod)}),
+    loglike = map_dbl(model, topicmodels::logLik),
+    perplexity = map_dbl(model, topicmodels::perplexity),
+    semantic_coh = map_dbl(model, function(x){sum(topicdoc::topic_coherence(x, dat_docmatrix))})
+  )
+
+topic_models %>% 
+  select(-file_name,-model) %>% 
+  pivot_longer(-1) %>% 
+  ggplot(aes(n_topic, value)) + 
+  geom_line() + 
+  geom_point() +
+  labs(x = 'Number of topics', y = 'Loglikelihood')+
+  scale_x_continuous(breaks=seq(1, 16, 1)) +
+  facet_wrap(~name, scale = "free_y", ncol = 2)
+```
+
+<div class="figure" style="text-align: center">
+
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-5-1.png" alt="Finding the optimal number of topics for modelling"  />
+
+<p class="caption">
+
+Finding the optimal number of topics for modelling
+
+</p>
+
+</div>
+
+``` r
+mod_topic <- topic_models[["model"]][[11]]
+
+#saveRDS(mod_topic, file = "data/final_topic_model.RDS")
+
+tidy(mod_topic, matrix = "beta") %>%
+  anti_join(rename(stop_words, term = word)) %>% 
+  group_by(topic) %>%
+  top_n(40, beta) %>%
+  ungroup() %>%
+  arrange(topic, -beta) %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(beta, term)) +
+  geom_vline(xintercept = 0) +
+  geom_col(show.legend = FALSE, color = 'black', fill = 'cyan4') +
+  facet_wrap(~ topic, scales = "free_y", ncol = 3, labeller = as_labeller(
+    function(x) paste('Topic', x)
+  )) +
+  scale_y_reordered() +
+  labs(x = expression(beta), y = NULL)
+```
+
+<div class="figure" style="text-align: center">
+
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-6-1.png" alt="Leggyakoribb szavak topikonként"  />
+
+<p class="caption">
+
+Leggyakoribb szavak topikonként
+
+</p>
+
+</div>
+
+``` r
+#TODO labels as topic names
+
+
+tidy(mod_topic, matrix = "beta") %>% # unreported
+  anti_join(rename(stop_words, term = word)) %>% 
+  group_by(topic) %>%
+  top_n(40, beta) %>%
+  group_modify(.f = ~ tibble(terms = str_c(.x$term, collapse = ", "))) %>% 
+  ungroup() %>% 
+  kable(caption= "Most frequent words by topic", align = c("c", "l"))
+```
+
+| topic | terms                                                                                                                                                                                                                                                                                                                                                                   |
+| :---: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|   1   | coronavirus, virus, 2020, corona, china, percent, industry, march, crisis, chinese, production, quarter, time, world, countries, billion, april, 2019, companies, passengers, million, economic, price, pandemic, sales, flights, demand, prices, increase, air, economy, compared, market, global, due, wuhan, company, decline, international, increased              |
+|   2   | coronavirus, 2020, corona, 1, events, canceled, march, sports, positive, city, de, football, time, world, games, postponed, athletes, cup, national, fans, sport, team, start, game, players, announced, olympic, due, league, match, clubs, season, matches, training, teams, club, play, event, played, player                                                        |
+|   3   | people, nursing, virus, homes, corona, care, home, health, crisis, measures, infection, infected, norwegian, time, day, employees, life, staff, doctors, norway, question, municipality, contact, lot, risk, week, situation, elderly, days, control, society, difficult, director, completely, stay, moment, weeks, believes, understand, means                        |
+|   4   | people, coronavirus, county, virus, infections, 19, covid, hospital, patients, care, yesterday, home, health, infection, positive, total, infected, deaths, isolation, 2, 24, intensive, hours, day, center, confirmed, disease, employees, tests, died, tested, medical, staff, hospitalized, symptoms, hospitals, person, reported, days, diagnosed                   |
+|   5   | coronavirus, emergency, government, 19, covid, european, minister, health, crisis, measures, epidemic, public, czech, time, euros, billion, support, law, employees, social, companies, tax, union, eu, million, budget, economic, commission, pandemic, ministry, prime, plan, economy, workers, money, due, situation, sector, added, financial                       |
+|   6   | people, coronavirus, virus, government, infections, country, test, minister, home, health, measures, friday, police, infection, spread, infected, public, travel, countries, day, monday, border, restaurants, italy, ministry, closed, quarantine, prime, citizens, announced, allowed, foreign, risk, restrictions, due, situation, rules, authorities, days, ban     |
+|   7   | people, coronavirus, vaccine, virus, government, vaccines, infections, 19, covid, vaccination, country, european, minister, health, epidemic, spread, infected, deaths, vaccinated, time, world, doses, countries, day, confirmed, disease, died, million, united, population, pandemic, increase, announced, week, authorities, reported, days, british, france, weeks |
+|   8   | people, coronavirus, virus, news, corona, children, home, friends, city, time, world, day, media, social, family, left, pandemic, life, mother, found, lot, house, days, church, father, woman, live, lives, told, feel, night, video, started, stay, weeks, morning, son, times, ago, wife                                                                             |
+|   9   | people, coronavirus, masks, virus, drug, 19, covid, patients, test, blood, health, infection, spread, infected, institute, 2, immune, world, testing, disease, tests, sars, information, research, medical, university, symptoms, system, researchers, data, treatment, antibodies, risk, study, clinical, cov, professor, results, diseases, scientists                |
+|  10   | people, coronavirus, masks, corona, children, school, home, public, city, students, parents, time, day, mask, monday, online, schools, customers, information, service, distance, education, staff, services, university, closed, learning, student, contact, restrictions, due, transport, finland, week, teachers, situation, wear, safety, primary, classes          |
+|  11   | people, coronavirus, government, food, 19, covid, home, cent, health, crisis, public, time, support, social, distancing, swiss, it’s, uk, pandemic, staff, services, switzerland, link, ireland, workers, restrictions, businesses, week, don’t, we’re, local, business, lockdown, irish, months, told, including, chief, weeks, government’s                           |
+|  12   | people, coronavirus, virus, government, news, corona, china, country, minister, security, health, crisis, public, rights, trump, time, world, media, law, social, election, united, pandemic, biden, vote, president, party, elections, political, house, white, court, war, campaign, called, donald, american, democratic, fight, leader                              |
+
+Most frequent words by topic
+
+``` r
+dat_topics %>% 
+  mutate(date = ym(str_sub(as.character(date), end = -4))) %>% 
+  group_by(date, country) %>% 
+  summarise_all(.funs = function(x)  mean(x, na.rm = T)) %>% 
+  ungroup() %>% 
+  select(date, starts_with('topic')) %>% 
+  group_by(date) %>% 
+  summarise_all(.funs = function(x)  mean(x, na.rm = T)) %>% 
+  ungroup() %>% 
+  pivot_longer(-1) %>% 
+  mutate(name = factor(str_remove_all(name, 'topic_'), levels = as.character(1:12),
+                       ordered = T)) %>% 
+  ggplot() +
+  aes(date, value, fill = name) +
+  geom_col(color = 'black') + 
+  labs(x = NULL, y = 'Relative frequency', fill = 'Topic') + 
+  scale_y_continuous(labels = scales::percent) + 
+  theme_minimal() +
+  theme(
+    legend.position = 'right',
+    legend.direction = 'vertical'
+  )
+```
+
+<div class="figure" style="text-align: center">
+
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-7-1.png" alt="Topikok relatív megoszlásának időbeni dinamikája"  />
+
+<p class="caption">
+
+Topikok relatív megoszlásának időbeni dinamikája
+
+</p>
+
+</div>
+
+``` r
+topic_descript_df <- tibble( 
+  topic = c(
+    "Economy and travel",
+    "Sport", 
+    "Hospitals", 
+    "Statistics", 
+    "Governmental aids", 
+    "Restrictions",
+    "Vaccination",
+    "Mental Health", 
+    "Researches", 
+    "Schools",
+    "Work",
+    "Politics"
+  ),
+  n = dat_topics %>% 
+    select(country, starts_with('topic')) %>% 
+    group_by(country) %>% 
+    summarise_all(.funs = function(x) mean(x, na.rm = T)) %>% 
+    ungroup() %>% 
+    select(-country) %>% 
+    apply(2, mean),
+  date = dat_topics %>% 
+    select(country, date, starts_with('topic')) %>% 
+    mutate(date = ym(str_sub(as.character(date), end = -4))) %>% 
+    group_by(country, date) %>% 
+    summarise_all(.funs = function(x) mean(x, na.rm = T)) %>% 
+    ungroup() %>% 
+    select(-country) %>% 
+    group_by(date) %>% 
+    summarise_all(.funs = function(x) mean(x, na.rm = T)) %>% 
+    {
+      apply(.[2:13], 2, function(x) {
+        as.character(.$date)[which.max(x)]
+      })
+    } %>% 
+    ymd(),
+  sentiment = dat_sentiment %>% 
+    select(country, sent_mean, sent_n, top_topic) %>% 
+    na.omit() %>% 
+    group_by(country, top_topic) %>% 
+    summarise(sentiment = weighted.mean(x = sent_mean,
+                                        w = sent_n,
+    )) %>% 
+    ungroup() %>% 
+    group_by(top_topic) %>% 
+    summarise(sentiment = mean(sentiment)) %>% 
+    #arrange(desc(top_topic)) %>% 
+    .$sentiment
+) %>% 
+  arrange(desc(n))
+
+ggplot(data = topic_descript_df) +
+  geom_hline(aes(yintercept = 0), linetype = 2, color = 'grey20') +
+  geom_point(aes(x = date, y = (sentiment-mean(sentiment))*n, fill = sentiment, size = n)) +
+  scale_size(range = c(10, 20), breaks = c(.1), 
+             labels = function(x) scales::percent(x, accuracy = 1, decimal.mark = ',')) + # TODO
+  scale_fill_gradient(low = 'cyan4', high = 'grey90', guide = guide_colorsteps()) +
+  geom_text(mapping = aes(x = date, y = (sentiment-mean(sentiment))*n, label = topic), 
+            show.legend = F, size = 3) + 
+  geom_text(mapping = aes(x = ymd('2020-03-01'), y = -.00008), 
+            color = 'grey20', size = 3,
+            label = "Average of topics' sentiments") +
+  labs(x = "Most typical month of topics", y = 'Sentiment influence',
+       fill = 'Average sentiment', size = 'Relative frequency (size)') +
+  theme_minimal() + 
+  theme(
+    legend.position = 'bottom',
+    legend.box = "vertical",
+    legend.key.width = unit(1, 'cm')
+  )
+```
+
+<div class="figure" style="text-align: center">
+
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-8-1.png" alt="Topikok jellemzése szentiment, dátum és gyakoriság szerint"  />
+
+<p class="caption">
+
+Topikok jellemzése szentiment, dátum és gyakoriság szerint
+
+</p>
+
+</div>
 
 ## Sentiment
 
 ``` r
-sent_dictionary %>% 
-  count(word, topic_name, sort = T) %>% 
-  filter(n == 2)
+bing_comparison %>% 
+  filter(sentiment != my_sentiment_2) %>% 
+  arrange(desc(n)) %>% 
+  mutate(my_sentiment = ifelse(my_sentiment_2 == "NA", 0, my_sentiment_2)) %>% 
+  select(word, n, sentiment, my_sentiment = my_sentiment_2) %>% 
+  head(23) %>% 
+  kable(caption = "Most frequent words with changed sentiments because of corpus-specific context", col.names = c("Word", "Frequency", "Old sentiment", "New sentiment"))
 ```
 
-    ## # A tibble: 0 x 3
-    ## # ... with 3 variables: word <chr>, topic_name <chr>, n <int>
+| Word        | Frequency | Old sentiment | New sentiment |
+| :---------- | --------: | ------------: | ------------: |
+| positive    |     80778 |             1 |           \-1 |
+| negative    |     25899 |           \-1 |             1 |
+| patient     |     22501 |             1 |           \-1 |
+| positives   |     10751 |             1 |           \-1 |
+| tough       |      3382 |             1 |           \-1 |
+| defeat      |      3267 |             1 |           \-1 |
+| tougher     |      1661 |             1 |           \-1 |
+| boom        |      1388 |             1 |           \-1 |
+| cheap       |      1071 |           \-1 |             1 |
+| elimination |       900 |           \-1 |             1 |
+| funny       |       676 |           \-1 |             1 |
+| toughest    |       444 |             1 |           \-1 |
+| negativity  |       321 |           \-1 |             1 |
+| negatives   |       317 |           \-1 |             1 |
+| frugal      |       307 |             1 |           \-1 |
+| sharpest    |       246 |             1 |           \-1 |
+
+Most frequent words with changed sentiments because of corpus-specific
+context
 
 ``` r
-sent_dictionary %>% 
-  count(word, sent) %>% 
-  filter(n != 12) %>% 
-  pull(word) %>% 
-  unique() %>% 
-  {filter(sent_dictionary, word %in% .)} %>% 
-  replace_na(list(sent = 0)) %>% 
-  ggplot(aes(x = topic_name, y = word, fill = as.factor(sent))) + 
-  geom_tile(color = "black") + 
-  theme(
-    axis.text.x = element_text(angle = 60, vjust = .1, hjust = .1)
-  )
+library(reshape2)
+
+dat_words_monthly %>% 
+  group_by(country, words) %>% 
+  summarise(n = sum(n)) %>% 
+  ungroup() %>% 
+  filter(!str_detect(words, '\\d')) %>% 
+  anti_join(data.frame(words = c(stopwords::stopwords(), "also", "can"))) %>% 
+  arrange(desc(n)) %>%
+  left_join(modified_bing, 
+            by=c("words"="word")) %>% 
+  mutate(
+    sentiment = ifelse(value > 0, "Positive", "Negative")
+  ) %>% 
+  na.omit() %>% 
+  arrange(desc(n)) %>% 
+  group_by(sentiment) %>% 
+  group_modify(~ head(.x, 50)) %>% 
+  ungroup() %>% 
+  acast(words ~ sentiment, value.var = "n", fill = 0) %>%
+  comparison.cloud(colors = c("cyan4", "red4"),
+                   max.words = 100)
 ```
 
-<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-6-1.png" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-10-1.png" alt="Leggyakrabban előforduló pozitív és negatív szentimenttel rendelkező szavak"  />
+
+<p class="caption">
+
+Leggyakrabban előforduló pozitív és negatív szentimenttel rendelkező
+szavak
+
+</p>
+
+</div>
 
 ``` r
 library(ggraph)
@@ -366,9 +695,9 @@ f_colorise <- function(x) {
     filter(value == -1) %>% 
     pull(word)
   case_when(
-    x %in% pos ~ 'positive',
-    x %in% neg ~ 'negative',
-    T ~ 'neutral'
+    x %in% pos ~ 'green', #positive
+    x %in% neg ~ 'red', #negative
+    T ~ 'black' #neutral
   )
 }
 
@@ -396,32 +725,46 @@ dat %>%
   labs(color = 'Sentiment')
 ```
 
-    ## Error in group_by(., country): object 'dat' not found
+<div class="figure" style="text-align: center">
+
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-11-1.png" alt="Szentimenttel bíró szavakkal korreláló szavak hálója"  />
+
+<p class="caption">
+
+Szentimenttel bíró szavakkal korreláló szavak hálója
+
+</p>
+
+</div>
+
+``` r
+#TODO color names
+```
 
 ``` r
 dat_sentiment_daily %>% 
   group_by(date) %>% 
-  summarise_at(c('n_total', 'n'), .funs = function(x) sum(x, na.rm = T)) %>% 
-  ggplot(aes(date, n/n_total)) +
+  summarise_at(c('n', 'sent_n'), .funs = function(x) sum(x, na.rm = T)) %>% 
+  ggplot(aes(date, sent_n/n)) +
   geom_line(color = '#595959', size = .8) +
-  geom_line(aes(date, zoo::rollmean(n/n_total, 7, na.pad=TRUE), 
+  geom_line(aes(date, zoo::rollmean(sent_n/n, 7, na.pad=TRUE), 
                 color = 'Rolling 7-day average'), size = 1.3) +
   scale_color_manual(values = c('#E3120B')) + 
   labs(x = NULL, y = 'Ratio of words with sentiment', color = NULL)
 ```
 
-    ## Error: Can't subset columns that don't exist.
-    ## x Column `n_total` doesn't exist.
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-12-1.png" style="display: block; margin: auto;" />
 
 ``` r
 # Explore the data ----------------------------------------------------------------------
 
 dat_sentiment_daily %>% 
+  mutate(code = country) %>% 
   ggplot(aes(date, sent_mean)) +
   geom_hline(yintercept = 0, color = "grey20") +
   geom_line(size = .3, color = 'grey50') +
   geom_smooth(size = 1.5, se = F) +
-  facet_geo(~ country, grid = mygrid, label = 'name') +
+  facet_geo(~ code, grid = mygrid, label = 'name') +
   scale_x_date(limits = c(min(dat_sentiment_daily$date), max(dat_sentiment_daily$date)),
                breaks = c(min(dat_sentiment_daily$date), max(dat_sentiment_daily$date))) +
   labs(y = "Sentiment", x = NULL)
@@ -429,9 +772,12 @@ dat_sentiment_daily %>%
 
 <div class="figure" style="text-align: center">
 
-<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-9-1.png" alt="A szentiment alakulása országonként" angle=90 />
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-13-1.png" alt="A szentiment alakulása országonként" angle=90 />
+
 <p class="caption">
+
 A szentiment alakulása országonként
+
 </p>
 
 </div>
@@ -481,276 +827,14 @@ dat_words_monthly %>%
 <div class="figure" style="text-align: center">
 
 <img src="CoronaSentiment_files/figure-gfm/tf_idf_per_month-1.png" alt="A cikkekben havonta leginkább jellemző szavak, TF-IDF értékek alapján"  />
+
 <p class="caption">
+
 A cikkekben havonta leginkább jellemző szavak, TF-IDF értékek alapján
+
 </p>
 
 </div>
-
-## Topic model
-
-``` r
-topic_models <- tibble(n_topic = c(2:14, 16)) %>% # number 15 is missing
-  mutate(
-    file_name = str_c(WD, '/data/topic_models/mod', n_topic, '.RData'),
-    model = map(file_name, function(x) {load(x); return(mod)}), # <<
-    # each RData contains one LDA model named as mod
-    loglike = map_dbl(model, topicmodels::logLik) # find optimal number of topics
-  )
-
-ggplot(topic_models, aes(n_topic, loglike)) + 
-  geom_line() + 
-  labs(x = 'Number of topics', y = 'Loglikelihood')
-```
-
-<div class="figure" style="text-align: center">
-
-<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-10-1.png" alt="Finding the optimal number of topics for modelling"  />
-<p class="caption">
-Finding the optimal number of topics for modelling
-</p>
-
-</div>
-
-``` r
-mod_topic <- topic_models[["model"]][[11]]
-```
-
-``` r
-tidy(mod_topic, matrix = "beta") %>%
-  anti_join(rename(stop_words, term = word)) %>% 
-  group_by(topic) %>%
-  top_n(20, beta) %>%
-  ungroup() %>%
-  arrange(topic, -beta) %>%
-  mutate(term = reorder_within(term, beta, topic)) %>%
-  ggplot(aes(beta, term)) +
-  geom_vline(xintercept = 0) +
-  geom_col(show.legend = FALSE, color = 'black', fill = 'cyan4') +
-  facet_wrap(~ topic, scales = "free_y", ncol = 3, labeller = as_labeller(
-    function(x) paste('Topic', x)
-  )) +
-  scale_y_reordered() + 
-  labs(x = expression(beta), y = NULL)
-```
-
-<div class="figure" style="text-align: center">
-
-<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-12-1.png" alt="Leggyakoribb szavak topikonként"  />
-<p class="caption">
-Leggyakoribb szavak topikonként
-</p>
-
-</div>
-
-``` r
-#TODO labels as topic names
-```
-
-``` r
-tidy(mod_topic, matrix = "beta") %>% # unreported
-  anti_join(rename(stop_words, term = word)) %>% 
-  group_by(topic) %>%
-  top_n(20, beta) %>%
-  group_modify(.f = ~ tibble(terms = str_c(.x$term, collapse = ", "))) %>% 
-  ungroup() %>% 
-  kable(caption= "Most frequent words by topic", align = c("c", "l"))
-```
-
-| topic | terms                                                                                                                                                                                        |
-|:-----:|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|   1   | percent, people, coronavirus, covid, 19, virus, infected, health, corona, infection, tests, time, symptoms, test, data, disease, spread, research, risk, study                               |
-|   2   | people, covid, 19, government, health, social, republic, minister, public, czech, time, information, measures, days, emergency, law, ministry, protection, situation, added                  |
-|   3   | people, coronavirus, covid, 19, infections, infected, health, patients, hospital, day, infection, deaths, tests, total, positive, 24, reported, hours, confirmed, died                       |
-|   4   | 2020, coronavirus, church, covid, 19, home, virus, hospital, day, positive, time, days, film, tested, world, family, woman, house, video, wife                                               |
-|   5   | people, coronavirus, covid, 19, home, schools, care, infected, school, health, patients, hospital, children, infection, students, employees, medical, staff, hospitals, situation            |
-|   6   | percent, coronavirus, government, billion, companies, crisis, countries, time, million, pandemic, european, support, euros, market, eu, economy, economic, company, due, financial           |
-|   7   | people, covid, 19, home, government, health, social, cent, masks, public, pandemic, workers, swiss, week, switzerland, link, it’s, lockdown, ireland, told                                   |
-|   8   | people, coronavirus, vaccine, covid, 19, trump, virus, donald, vaccines, health, vaccination, china, president, million, doses, pandemic, european, vaccinated, united, world                |
-|   9   | 1, coronavirus, league, corona, madrid, time, football, pandemic, games, season, world, start, players, announced, de, team, due, sports, french, france                                     |
-|  10   | people, coronavirus, virus, government, health, country, minister, countries, restrictions, measures, days, italy, travel, border, spread, quarantine, announced, prime, authorities, closed |
-|  11   | people, coronavirus, health, corona, social, country, crisis, countries, president, million, pandemic, media, city, police, world, court, authorities, due, political, security              |
-|  12   | people, home, day, crisis, time, pandemic, days, life, world, family, situation, live, lot, weeks, feel, hope, moment, times, difficult, understand                                          |
-
-Most frequent words by topic
-
-``` r
-dat_topics %>% 
-  mutate(date = ym(str_sub(as.character(date), end = -4))) %>% 
-  group_by(date, country) %>% 
-  summarise_all(.funs = function(x)  mean(x, na.rm = T)) %>% 
-  ungroup() %>% 
-  select(date, starts_with('topic')) %>% 
-  group_by(date) %>% 
-  summarise_all(.funs = function(x)  mean(x, na.rm = T)) %>% 
-  ungroup() %>% 
-  pivot_longer(-1) %>% 
-  mutate(name = factor(str_remove_all(name, 'topic_'), levels = as.character(1:12),
-                       ordered = T)) %>% 
-  ggplot() +
-  aes(date, value, fill = name) +
-  geom_col(color = 'black') + 
-  labs(x = NULL, y = 'Relative frequency', fill = 'Topic') + 
-  scale_y_continuous(labels = scales::percent) + 
-  theme_minimal() +
-  theme(
-    legend.position = 'right',
-    legend.direction = 'vertical'
-  )
-```
-
-<div class="figure" style="text-align: center">
-
-<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-14-1.png" alt="Topikok relatív megoszlásának időbeni dinamikája"  />
-<p class="caption">
-Topikok relatív megoszlásának időbeni dinamikája
-</p>
-
-</div>
-
-``` r
-topic_descript_df <- tibble( 
-  topic = c("Researches", "Politics", "Statistics", "Public Life", "Public Institutions", "Economy",
-            "Restrictions", "Vaccination", "Sport", "Travel", "Police Measures", "Mental Health"),
-  n = dat_topics %>% 
-    select(country, starts_with('topic')) %>% 
-    group_by(country) %>% 
-    summarise_all(.funs = function(x) mean(x, na.rm = T)) %>% 
-    ungroup() %>% 
-    select(-country) %>% 
-    apply(2, mean),
-  date = dat_topics %>% 
-    select(country, date, starts_with('topic')) %>% 
-    mutate(date = ym(str_sub(as.character(date), end = -4))) %>% 
-    group_by(country, date) %>% 
-    summarise_all(.funs = function(x) mean(x, na.rm = T)) %>% 
-    ungroup() %>% 
-    select(-country) %>% 
-    group_by(date) %>% 
-    summarise_all(.funs = function(x) mean(x, na.rm = T)) %>% 
-    {
-      apply(.[2:13], 2, function(x) {
-        as.character(.$date)[which.max(x)]
-      })
-    } %>% 
-    ymd(),
-  sentiment = dat_topics %>% 
-    select(country, sentiment, n_sentiment, top_topic) %>% 
-    na.omit() %>% 
-    group_by(country, top_topic) %>% 
-    summarise(sentiment = weighted.mean(x = sentiment,
-                                        w = n_sentiment,
-    )) %>% 
-    ungroup() %>% 
-    group_by(top_topic) %>% 
-    summarise(sentiment = mean(sentiment)) %>% 
-    arrange(desc(topic)) %>% 
-    .$sentiment
-) %>% 
-  arrange(desc(n))
-
-ggplot(data = topic_descript_df) +
-  geom_hline(aes(yintercept = 0), linetype = 2, color = 'grey20') +
-  geom_point(aes(x = date, y = (sentiment-mean(sentiment))*n, fill = sentiment, size = n)) +
-  scale_size(range = c(10, 20), breaks = c(.1), 
-             labels = function(x) scales::percent(x, accuracy = 1, decimal.mark = ',')) + # TODO
-  scale_fill_gradient(low = 'cyan4', high = 'grey90', guide = guide_colorsteps()) +
-  geom_text(mapping = aes(x = date, y = (sentiment-mean(sentiment))*n, label = topic), 
-            show.legend = F, size = 3) + 
-  geom_text(mapping = aes(x = ymd('2020-03-01'), y = -.00008), 
-            color = 'grey20', size = 3,
-            label = "Average of topics' sentiments") +
-  labs(x = "Most typical month of topics", y = 'Sentiment influence',
-       fill = 'Average sentiment', size = 'Relative frequency (size)') +
-  theme_minimal() + 
-  theme(
-    legend.position = 'bottom',
-    legend.box = "vertical",
-    legend.key.width = unit(1, 'cm')
-  )
-```
-
-<div class="figure" style="text-align: center">
-
-<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-15-1.png" alt="Topikok jellemzése szentiment, dátum és gyakoriság szerint"  />
-<p class="caption">
-Topikok jellemzése szentiment, dátum és gyakoriság szerint
-</p>
-
-</div>
-
-``` r
-dat_sentiment %>% 
-  left_join(topic_name, c("top_topic" = "topic")) %>% 
-  group_by(topic_name) %>% 
-  group_modify(~ mutate(.x, avg = mean(sent_mean, na.rm = T))) %>% 
-  ungroup() %>% 
-  mutate(topic_name = fct_reorder(topic_name, avg)) %>% 
-  ggplot(aes(sent_mean)) + 
-  geom_histogram(color = "black", fill = "cyan4", alpha = .6) +
-  geom_vline(aes(xintercept = avg), color = "red", lty = 2, size = 1.2) +
-  facet_wrap(~ topic_name, scales = "free_y", ncol = 1)
-```
-
-<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-16-1.png" style="display: block; margin: auto;" />
-
-``` r
-dat_sentiment %>% 
-  left_join(topic_name, c("top_topic" = "topic")) %>% 
-  group_by(topic_name) %>% 
-  group_modify(~ mutate(.x, avg = mean(sent_mean, na.rm = T))) %>% 
-  ungroup() %>% 
-  mutate(topic_name = fct_reorder(topic_name, avg)) %>% 
-  filter(sent_n > 20) %>% 
-  ggplot(aes(sent_mean)) + 
-  geom_histogram(color = "black", fill = "cyan4", alpha = .6) +
-  geom_vline(aes(xintercept = avg), color = "red", lty = 2, size = 1.2) +
-  facet_wrap(~ topic_name, scales = "free_y", ncol = 1)
-```
-
-<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-17-1.png" style="display: block; margin: auto;" />
-
-``` r
-dat_topics %>% 
-  select(starts_with("topic")) %>% 
-  cor() %>% 
-  data.frame() %>% 
-  rownames_to_column(var = "x") %>% 
-  pivot_longer(-x, names_to = "y") %>%
-  mutate_at(1:2, ~ as.numeric(str_remove_all(., "\\D"))) %>% 
-  left_join(topic_name, by = c("x" = "topic")) %>% 
-  left_join(topic_name, by = c("y" = "topic")) %>% 
-  select(-(1:2)) %>% 
-  rename_all(~ str_remove(., "topic_name.")) %>% 
-  filter(y < x) %>% 
-  ggplot(aes(x, y, fill = value)) +
-  geom_tile(color = "black") +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
-```
-
-<div class="figure" style="text-align: center">
-
-<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-18-1.png" alt="Correlation matrix of topics' gamma"  />
-<p class="caption">
-Correlation matrix of topics’ gamma
-</p>
-
-</div>
-
-``` r
-dat_topics %>% 
-  mutate(date = ym(str_sub(as.character(date), end = -4))) %>% 
-  left_join(topic_name, by = c("top_topic" = "topic")) %>% 
-  ggplot(aes(date, fill = topic_name)) + 
-  geom_bar(color = "black", position = position_fill()) + 
-  facet_wrap(~ country, ncol = 3) + 
-  scale_fill_viridis_d() +
-  theme(
-    axis.text.x = element_text(angle = 90, hjust = 1)
-  )
-```
-
-<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-19-1.png" style="display: block; margin: auto;" />
 
 # Econometrics
 
@@ -759,34 +843,53 @@ dat_topics %>%
 ``` r
 dat_plm <- dat_eco_sent %>% 
   filter(indic == "BS-ESI-I") %>% 
-  select(date = time, country = geo, eco = values) %>% 
-  full_join(dat_sentiment_monthly, by = c("date" = "m", "country")) %>% 
-  rename(code = country) %>% 
-  left_join(dat_unemployment) %>% 
-  left_join(dat_covid_monthly) %>% 
-  mutate(t = interval("2020-01-01", date) %/% months(1), 
-         
-         t_2 = t*t,
-         season = case_when(
-           date < ymd('2020-03-01') ~ 'Winter 2019/2020',
-           date < ymd('2020-06-01') ~ 'Spring 2020',
-           date < ymd('2020-09-01') ~ 'Summer 2020',
-           date < ymd('2020-12-01') ~ 'Autumn 2020',
-           T ~ 'Winter 2020/2021'
-         ),
-         season = factor(season, levels = c('Winter 2019/2020', 'Spring 2020',
-                                            'Summer 2020', 'Autumn 2020',
-                                            'Winter 2020/2021'))
+  select(date = time, code = geo, eco = values) %>% 
+  merge(mutate(dat_sentiment_monthly, code = country), all = T) %>% 
+  merge(dat_unemployment, all = T) %>% 
+  merge(dat_covid_monthly, all = T) %>% 
+  mutate(
+    t = lubridate::interval(lubridate::ymd('2020-01-01'), date),
+    t = lubridate::as.period(t) %/% months(1),
+    cases = ifelse(is.na(cases), 0, cases),
+    death = ifelse(is.na(death), 0, death),
+    new_cases = ifelse(is.na(new_cases), 0, new_cases),
+    new_deaths = ifelse(is.na(new_deaths), 0, new_deaths)
   ) %>% 
-  select(date, t, season, country = code, sentiment = sent_mean, eco, unemployment, cases, death, new_cases, new_deaths) %>% 
-  replace_na(list(cases = 0, death = 0, new_cases = 0, new_deaths = 0)) %>% 
-  filter(!is.na(sentiment))
+  select(-country, -n) %>% 
+  pivot_longer(-c(1:2)) %>% 
+  {
+    rbind(.,
+          mutate(., 
+                 name = paste0(name, '_l'),
+                 date = date %m+% months(1)
+          )
+    )
+  } %>%
+  pivot_wider(names_from = name, values_from = value) %>% 
+  mutate(
+    cases_l = ifelse(is.na(cases_l), 0, cases_l),
+    death_l = ifelse(is.na(death_l), 0, death_l)
+  ) %>% 
+  mutate(t_2 = t*t) %>% 
+  mutate(
+    season = case_when(
+      date < ymd('2020-03-01') ~ 'Winter 2019/2020',
+      date < ymd('2020-06-01') ~ 'Spring 2020',
+      date < ymd('2020-09-01') ~ 'Summer 2020',
+      date < ymd('2020-12-01') ~ 'Autumn 2020',
+      T ~ 'Winter 2020/2021'
+    ),
+    season = factor(season, levels = c('Winter 2019/2020', 'Spring 2020', 'Summer 2020', 'Autumn 2020',
+                                       'Winter 2020/2021'))
+  ) %>% 
+  filter(!is.na(sent_mean)) %>% 
+  select(code, date, everything())
 ```
 
 ``` r
 # Regression tree -----------------------------------------------------------------------
 dat_plm %>% 
-  select(sentiment, eco, unemployment, cases, death, new_cases, new_deaths, t) %>% 
+  select(sent_mean, eco, unemployment, cases, death, new_cases, new_deaths, t) %>% 
   set_names('Sentiment', 'ESI', 'Unemployment', 'Number of cases (per 1000)', 'Number of deaths (per 1000)',
             'Number of cases', 'Number of deaths', 't') %>% 
   rpart::rpart(formula = Sentiment ~.,
@@ -796,9 +899,12 @@ dat_plm %>%
 
 <div class="figure" style="text-align: center">
 
-<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-21-1.png" alt="Regressziós fa"  />
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-15-1.png" alt="Regressziós fa"  />
+
 <p class="caption">
+
 Regressziós fa
+
 </p>
 
 </div>
@@ -808,8 +914,8 @@ dat_plm %>%
   mutate(
     date = str_sub(as.character(date), end = -4)
   ) %>% 
-  ggplot(aes(eco, sentiment, fill = season, label = paste(date, country))) + 
-  geom_point(size = 2, shape = 21) +
+  ggplot(aes(eco, sent_mean, fill = season, label = paste(date, code))) + 
+  geom_point(size = 2) +
   ggrepel::geom_text_repel(max.overlaps = 5) +
   theme_bw() + 
   theme(legend.position = 'bottom') +
@@ -819,10 +925,13 @@ dat_plm %>%
 
 <div class="figure" style="text-align: center">
 
-<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-22-1.png" alt="A hírekben megjelenő szentiment és gazdaság érzékelési index közötti kapcsolat"  />
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-16-1.png" alt="A hírekben megjelenő szentiment és gazdaság érzékelési index közötti kapcsolat"  />
+
 <p class="caption">
+
 A hírekben megjelenő szentiment és gazdaság érzékelési index közötti
 kapcsolat
+
 </p>
 
 </div>
@@ -830,14 +939,10 @@ kapcsolat
 ## Panel models
 
 ``` r
-dat_plm <- dat_plm %>% 
-  select(country, date, t, everything())
-
 panel_models <- tibble(
   formula = c(
-    "sentiment ~ death + eco",
-    "sentiment ~ death + season + eco + death:t",
-    "sentiment ~ death + eco + death:t"
+    "sent_mean ~ death + eco",
+    "sent_mean ~ death + eco + season + death:t"
   )
 ) %>% 
   mutate(
@@ -852,17 +957,15 @@ panel_models <- tibble(
 knitr::kable(select(panel_models, -pooling, -within))
 ```
 
-| formula                                     | pooltest\_pvalue | r\_within |
-|:--------------------------------------------|-----------------:|----------:|
-| sentiment \~ death + eco                    |        0.0005297 | 0.2343142 |
-| sentiment \~ death + season + eco + death:t |        0.0000000 | 0.6800783 |
-| sentiment \~ death + eco + death:t          |        0.0003009 | 0.2622714 |
+| formula                                      | pooltest\_pvalue | r\_within |
+| :------------------------------------------- | ---------------: | --------: |
+| sent\_mean \~ death + eco                    |                0 | 0.2811711 |
+| sent\_mean \~ death + eco + season + death:t |                0 | 0.6516074 |
 
 ``` r
 pwalk(list(model = pull(panel_models, within), 
            title = c("Regressziós eredmények időszakra való kontrollálás nélkül", 
-                     "Becsült regresszió paraméterek kontrollálva az időszakokra",
-                     "új")), 
+                     "Becsült regresszió paraméterek kontrollálva az időszakokra")), 
       function(model, title) {
         tidy(model) %>% 
           kable(caption = title) %>% 
@@ -870,29 +973,21 @@ pwalk(list(model = pull(panel_models, within),
       })
 ```
 
-| term  |   estimate | std.error | statistic |   p.value |
-|:------|-----------:|----------:|----------:|----------:|
-| death |  0.1829165 | 0.1035821 |  1.765908 | 0.0813752 |
-| eco   | -0.0089531 | 0.0014138 | -6.332454 | 0.0000000 |
+| term  |    estimate | std.error |   statistic | p.value |
+| :---- | ----------: | --------: | ----------: | ------: |
+| death |   0.2134282 | 0.0419071 |    5.092893 |   6e-07 |
+| eco   | \-0.0055007 | 0.0004939 | \-11.136370 |   0e+00 |
 
 Regressziós eredmények időszakra való kontrollálás nélkül
 
-| term                   |   estimate | std.error |  statistic |   p.value |
-|:-----------------------|-----------:|----------:|-----------:|----------:|
-| death                  | -0.0864387 | 0.4693096 | -0.1841828 | 0.8543878 |
-| seasonSpring 2020      |  0.3401115 | 0.0460983 |  7.3779687 | 0.0000000 |
-| seasonSummer 2020      |  0.2891201 | 0.0339310 |  8.5208318 | 0.0000000 |
-| seasonAutumn 2020      |  0.2823355 | 0.0292688 |  9.6463011 | 0.0000000 |
-| seasonWinter 2020/2021 |  0.2809123 | 0.0426439 |  6.5874028 | 0.0000000 |
-| eco                    |  0.0013889 | 0.0017026 |  0.8157164 | 0.4173528 |
-| death:t                |  0.0169033 | 0.0465345 |  0.3632416 | 0.7174887 |
+| term                   |    estimate | std.error |  statistic |   p.value |
+| :--------------------- | ----------: | --------: | ---------: | --------: |
+| death                  | \-0.2037525 | 0.1109831 | \-1.835889 | 0.0673349 |
+| eco                    | \-0.0017471 | 0.0004733 | \-3.691289 | 0.0002637 |
+| seasonSpring 2020      |   0.2576966 | 0.0158607 |  16.247521 | 0.0000000 |
+| seasonSummer 2020      |   0.2259041 | 0.0149750 |  15.085391 | 0.0000000 |
+| seasonAutumn 2020      |   0.2164940 | 0.0138197 |  15.665577 | 0.0000000 |
+| seasonWinter 2020/2021 |   0.2402200 | 0.0177793 |  13.511185 | 0.0000000 |
+| death:t                |   0.0295632 | 0.0114849 |   2.574100 | 0.0105158 |
 
 Becsült regresszió paraméterek kontrollálva az időszakokra
-
-| term    |   estimate | std.error | statistic |   p.value |
-|:--------|-----------:|----------:|----------:|----------:|
-| death   | -0.9320381 | 0.5723828 | -1.628348 | 0.1075899 |
-| eco     | -0.0102075 | 0.0015256 | -6.690630 | 0.0000000 |
-| death:t |  0.1033452 | 0.0522105 |  1.979396 | 0.0513931 |
-
-új
