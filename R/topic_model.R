@@ -5,9 +5,9 @@ library(topicmodels)
 set.seed(2021)
 
 WD <- getwd() %>% 
-  gsub(pattern = "nlp-covid_2.*", replacement = "nlp-covid_2")
+  gsub(pattern = "nlp-covid.*", replacement = "nlp-covid")
 
-if (!("k" %in% ls())) k <- 12 # default value
+if (!("k" %in% ls())) k <- 2:16 # Calculate topics for k=2 to 16
 
 message(k)
 
@@ -16,17 +16,19 @@ dat <- list.files(str_c(WD, "/data")) %>%
   {str_c(WD, "/data/", .)} %>% 
   map(readRDS) %>% 
   bind_rows()
-# 
+
+
+#Calculate document-term matrix for 1000 article sample per country 
 # dat_docmatrix <- dat %>% 
 #   group_by(country) %>% 
 #   group_modify(~ sample_n(.x, 1000, replace = FALSE)) %>% 
 #   ungroup() %>% 
-#   transmute(r = row_number(), text) %>% 
-#   unnest_tokens(output = words, input = text) %>% 
-#   count(r, words, sort = T) %>% 
-#   cast_dfm(r, words, n)
+#   transmute(r = row_number(), text) %>%
+#   unnest_tokens(output = words, input = text) %>%
+#   count(r, words, sort = T) %>%
+#   cast_dfm(r, words, n) %>% 
+#   write_rds(file = str_c(WD, "/data/docmatrix.RDS"))
 
-#write_rds(dat_docmatrix, file = str_c(WD, "/data/docmatrix.RDS"))
 dat_docmatrix<-readRDS(str_c(WD, "/data/topic_models/docmatrix.RDS"))
 
 for (i in k) {

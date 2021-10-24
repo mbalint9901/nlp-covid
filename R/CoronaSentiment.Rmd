@@ -79,18 +79,37 @@ theme_set(theme_grey() + theme(
 # DFs from the cleaning.R file ==========================================================
 
 dat <- list.files(str_c(WD, "/data/")) %>% 
-  keep(~ str_detect(., "dat_\\d.RDS")) %>% 
+  keep(~ str_detect(., "dat_\\d+.RDS")) %>% 
   {str_c(WD, "/data/", .)} %>% 
   map(readRDS) %>% 
   reduce(rbind)
 
-dat_sentiment_daily <- read_rds(str_c(WD, "/data/dat_sentiment_daily.RDS")) %>% 
-  select(date, country, sentiment =  new_sentiment, n = new_n, n_total = n)
 
-dat_sentiment_monthly <- read_rds(str_c(WD, "/data/dat_sentiment_monthly.RDS")) %>% 
-  select(date, country, sentiment = new_sentiment, n = new_n, n_total = n)
+# Topic models ==========================================================================
 
-dat_words_monthly <- read_rds(str_c(WD, "/data/dat_words_monthly.rds"))
+# Topic models calculated in -> topic_models.R <-
+# moved this calculations to different files due to the large computation time
+# Posterior estimation of each article with topic models is also computation heavy
+# >> find the estimation in -> dat_topics.R <-
+
+dat_topics <- read_rds(str_c(WD, "/data/dat_topics.rds"))
+
+# Sentiment scores  ==========================================================================
+
+# Sentiment scores are calculated by a dictionary based on topics -> sentiment_scores.R <-
+# moved this calculations to different files due to the large computation time
+
+load(str_c(WD, "/data/sentiment_scores_results.RData"))
+# 
+# dat_sentiment_daily <- read_rds(str_c(WD, "/data/dat_sentiment_daily.RDS")) %>% 
+#   select(date, country, sentiment =  new_sentiment, n = new_n, n_total = n)
+# 
+# dat_sentiment_monthly <- read_rds(str_c(WD, "/data/dat_sentiment_monthly.RDS")) %>% 
+#   select(date, country, sentiment = new_sentiment, n = new_n, n_total = n)
+# 
+# dat_words_monthly <- read_rds(str_c(WD, "/data/dat_words_monthly.rds"))
+
+load(str_c(WD, "/data/raw/Germany_rawtext.RData"))
 
 source(str_c(WD, "/R/data_setup.R")) # additional datasets available online
 
@@ -98,29 +117,25 @@ source(str_c(WD, "/R/data_setup.R")) # additional datasets available online
 # To ensure full reproducibility see the attached files at the corresponding
 # GitHub Repo: -> https://github.com/MarcellGranat/CoronaSentiment <-
 
-# Topic models ==========================================================================
-
-# Topic models calculated in -> topic_models.R <-
-# moved this calculations to different files due to the large computation time
-# Posterior estimation of each article with topic models is also computation heavy
-# >> find the estimation in -> topics_byarticle.R <-
-
-
-load(str_c(WD, "/data/topics_bydat.RData"))
-load(str_c(WD, "/data/raw/Germany_rawtext.RData"))
 
 ### COVID-dictionary ####################################################################
 
 # own edited sentiment dictionary calibrated to COVID articles
 
 bing_comparison <- read_delim(str_c(WD, "/data/sentiment_scores.csv"), 
-    ";", escape_double = FALSE, trim_ws = TRUE)
+                              ";", escape_double = FALSE, trim_ws = TRUE)
 
 modified_bing <- bing_comparison  %>% 
   select(word, value = 'my_sentiment_2') %>% 
   na.omit()
 
+word_frequency <- read_delim(str_c(WD, "/word_frequency_by_topic.csv"), 
+                              ",", escape_double = FALSE, trim_ws = TRUE)
+
+
+
 ```
+
 
 ```{r}
 metadata_df <- tibble::tribble(
@@ -187,8 +202,8 @@ select(metadata_df, 'Country', "Media outlet", "State-financed", "Starting date"
 # Automatic translation =================================================================
 
 Germany_rawtext %<>% 
-    select(text) %>% 
-    unnest_tokens(words, text)
+  select(text) %>% 
+  unnest_tokens(words, text)
 
 st_de <- c(stopwords::stopwords('german'), "ab", "dass", "mehr", "worden", "wurde", "wurden", "sei") %>% 
   {ifelse(str_starts(., "új"), NA, .)} %>% 
@@ -319,19 +334,19 @@ dat_covid %>%
   ) %>% 
   {
     
-    ggplot(., aes(x =date, y = new_cases, color = "Number of daily new cases")) +
+    ggplot(., aes(x =date, y = new_cases)) +
       geom_hline(yintercept = 0) +
-      geom_line() +
-      geom_line(aes(date, n_sentiment*2, color = "Number of words with sentiment")) + 
+      geom_line(color = "red") +
+      geom_line(aes(date, n_sentiment*0.1), color = "blue") + 
       scale_y_continuous(
         name = "Number of daily new cases",
-        sec.axis = sec_axis(~./2, name="Number of words with sentiment")
+        sec.axis = sec_axis(~./0.1, name="Number of words with sentiment")
       ) + 
-        geom_mark_circle(data = filter(., !is.na(text)), aes(x=date, y = n_sentiment, description = glue('"{text}"'),
-                                                             label = glue("{date}:"), group = date), color = NA, 
-                         expand = unit(2, "mm"), label.family = c("Oswald", "Poppins"), 
-                         label.fontsize = 6,
-                         label.buffer = unit(5, "mm"), con.size = 0.2) +
+      geom_mark_circle(data = filter(., !is.na(text)), aes(x=date, y = n_sentiment, description = glue('"{text}"'),
+                                                           label = glue("{date}:"), group = date), color = NA, 
+                       expand = unit(2, "mm"), label.family = c("Oswald", "Poppins"), 
+                       label.fontsize = 6,
+                       label.buffer = unit(5, "mm"), con.size = 0.2) +
       labs(x = NULL, color = NULL) + 
       theme(
         legend.position = 'bottom'
@@ -342,6 +357,173 @@ dat_covid %>%
 ```
 
 # Text analysis
+
+## Topic model
+
+```{r fig.cap='Finding the optimal number of topics for modelling', fig.height=2.5}
+
+dat_docmatrix<-readRDS(str_c(WD, "/data/topic_models/docmatrix.RDS"))
+ 
+topic_models <- tibble(n_topic = c(2:16)) %>%
+  mutate(
+    file_name = str_c(WD, '/data/topic_models/topic_model', n_topic, '.RData'),
+    # each RData contains one LDA model named as mod
+    model = map(file_name, function(x) {load(x); return(mod)}),
+    loglike = map_dbl(model, topicmodels::logLik),
+    perplexity = map_dbl(model, topicmodels::perplexity),
+    semantic_coh = map_dbl(model, function(x){sum(topicdoc::topic_coherence(x, dat_docmatrix))})
+  )
+
+topic_models %>% 
+  select(-file_name,-model) %>% 
+  pivot_longer(-1) %>% 
+  ggplot(aes(n_topic, value)) + 
+  geom_line() + 
+  geom_point() +
+  labs(x = 'Number of topics', y = 'Loglikelihood')+
+  scale_x_continuous(breaks=seq(1, 16, 1)) +
+  facet_wrap(~name, scale = "free_y", ncol = 2)
+
+```
+
+```{r fig.height=12, fig.cap='Leggyakoribb szavak topikonként'}
+
+mod_topic <- topic_models[["model"]][[11]]
+
+#saveRDS(mod_topic, file = "data/final_topic_model.RDS")
+
+tidy(mod_topic, matrix = "beta") %>%
+  anti_join(rename(stop_words, term = word)) %>% 
+  group_by(topic) %>%
+  top_n(40, beta) %>%
+  ungroup() %>%
+  arrange(topic, -beta) %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(beta, term)) +
+  geom_vline(xintercept = 0) +
+  geom_col(show.legend = FALSE, color = 'black', fill = 'cyan4') +
+  facet_wrap(~ topic, scales = "free_y", ncol = 3, labeller = as_labeller(
+    function(x) paste('Topic', x)
+  )) +
+  scale_y_reordered() +
+  labs(x = expression(beta), y = NULL)
+
+#TODO labels as topic names
+
+
+tidy(mod_topic, matrix = "beta") %>% # unreported
+  anti_join(rename(stop_words, term = word)) %>% 
+  group_by(topic) %>%
+  top_n(40, beta) %>%
+  group_modify(.f = ~ tibble(terms = str_c(.x$term, collapse = ", "))) %>% 
+  ungroup() %>% 
+  kable(caption= "Most frequent words by topic", align = c("c", "l"))
+
+```
+
+
+
+```{r fig.cap="Topikok relatív megoszlásának időbeni dinamikája"}
+dat_topics %>% 
+  mutate(date = ym(str_sub(as.character(date), end = -4))) %>% 
+  group_by(date, country) %>% 
+  summarise_all(.funs = function(x)  mean(x, na.rm = T)) %>% 
+  ungroup() %>% 
+  select(date, starts_with('topic')) %>% 
+  group_by(date) %>% 
+  summarise_all(.funs = function(x)  mean(x, na.rm = T)) %>% 
+  ungroup() %>% 
+  pivot_longer(-1) %>% 
+  mutate(name = factor(str_remove_all(name, 'topic_'), levels = as.character(1:12),
+                       ordered = T)) %>% 
+  ggplot() +
+  aes(date, value, fill = name) +
+  geom_col(color = 'black') + 
+  labs(x = NULL, y = 'Relative frequency', fill = 'Topic') + 
+  scale_y_continuous(labels = scales::percent) + 
+  theme_minimal() +
+  theme(
+    legend.position = 'right',
+    legend.direction = 'vertical'
+  )
+
+```
+
+```{r fig.height=6, fig.cap='Topikok jellemzése szentiment, dátum és gyakoriság szerint'}
+topic_descript_df <- tibble( 
+  topic = c(
+    "Economy and travel",
+    "Sport", 
+    "Hospitals", 
+    "Statistics", 
+    "Governmental aids", 
+    "Restrictions",
+    "Vaccination",
+    "Mental Health", 
+    "Researches", 
+    "Schools",
+    "Work",
+    "Politics"
+  ),
+  n = dat_topics %>% 
+    select(country, starts_with('topic')) %>% 
+    group_by(country) %>% 
+    summarise_all(.funs = function(x) mean(x, na.rm = T)) %>% 
+    ungroup() %>% 
+    select(-country) %>% 
+    apply(2, mean),
+  date = dat_topics %>% 
+    select(country, date, starts_with('topic')) %>% 
+    mutate(date = ym(str_sub(as.character(date), end = -4))) %>% 
+    group_by(country, date) %>% 
+    summarise_all(.funs = function(x) mean(x, na.rm = T)) %>% 
+    ungroup() %>% 
+    select(-country) %>% 
+    group_by(date) %>% 
+    summarise_all(.funs = function(x) mean(x, na.rm = T)) %>% 
+    {
+      apply(.[2:13], 2, function(x) {
+        as.character(.$date)[which.max(x)]
+      })
+    } %>% 
+    ymd(),
+  sentiment = dat_sentiment %>% 
+    select(country, sent_mean, sent_n, top_topic) %>% 
+    na.omit() %>% 
+    group_by(country, top_topic) %>% 
+    summarise(sentiment = weighted.mean(x = sent_mean,
+                                        w = sent_n,
+    )) %>% 
+    ungroup() %>% 
+    group_by(top_topic) %>% 
+    summarise(sentiment = mean(sentiment)) %>% 
+    #arrange(desc(top_topic)) %>% 
+    .$sentiment
+) %>% 
+  arrange(desc(n))
+
+ggplot(data = topic_descript_df) +
+  geom_hline(aes(yintercept = 0), linetype = 2, color = 'grey20') +
+  geom_point(aes(x = date, y = (sentiment-mean(sentiment))*n, fill = sentiment, size = n)) +
+  scale_size(range = c(10, 20), breaks = c(.1), 
+             labels = function(x) scales::percent(x, accuracy = 1, decimal.mark = ',')) + # TODO
+  scale_fill_gradient(low = 'cyan4', high = 'grey90', guide = guide_colorsteps()) +
+  geom_text(mapping = aes(x = date, y = (sentiment-mean(sentiment))*n, label = topic), 
+            show.legend = F, size = 3) + 
+  geom_text(mapping = aes(x = ymd('2020-03-01'), y = -.00008), 
+            color = 'grey20', size = 3,
+            label = "Average of topics' sentiments") +
+  labs(x = "Most typical month of topics", y = 'Sentiment influence',
+       fill = 'Average sentiment', size = 'Relative frequency (size)') +
+  theme_minimal() + 
+  theme(
+    legend.position = 'bottom',
+    legend.box = "vertical",
+    legend.key.width = unit(1, 'cm')
+  )
+
+```
+
 
 ## Sentiment
 
@@ -445,7 +627,7 @@ dat_sentiment_daily %>%
 
 dat_sentiment_daily %>% 
   mutate(code = country) %>% 
-  ggplot(aes(date, sentiment)) +
+  ggplot(aes(date, sent_mean)) +
   geom_hline(yintercept = 0, color = "grey20") +
   geom_line(size = .3, color = 'grey50') +
   geom_smooth(size = 1.5, se = F) +
@@ -498,147 +680,6 @@ dat_words_monthly %>%
   labs(x = "TF-IDF", y = NULL)
 ```
 
-## Topic model
-
-```{r fig.cap='Finding the optimal number of topics for modelling', fig.height=2.5}
-topic_models <- tibble(n_topic = c(2:14, 16)) %>% # number 15 is missing
-  mutate(
-    file_name = str_c(WD, '/data/topic_models/mod', n_topic, '.RData'),
-    model = map(file_name, function(x) {load(x); return(mod)}), # <<
-    # each RData contains one LDA model named as mod
-    loglike = map_dbl(model, topicmodels::logLik) # find optimal number of topics
-  )
-
-ggplot(topic_models, aes(n_topic, loglike)) + 
-  geom_line() + 
-  labs(x = 'Number of topics', y = 'Loglikelihood')
-```
-
-```{r}
-mod_topic <- topic_models[["model"]][[11]]
-```
-
-```{r fig.height=12, fig.cap='Leggyakoribb szavak topikonként'}
-tidy(mod_topic, matrix = "beta") %>%
-  anti_join(rename(stop_words, term = word)) %>% 
-  group_by(topic) %>%
-  top_n(20, beta) %>%
-  ungroup() %>%
-  arrange(topic, -beta) %>%
-  mutate(term = reorder_within(term, beta, topic)) %>%
-  ggplot(aes(beta, term)) +
-  geom_vline(xintercept = 0) +
-  geom_col(show.legend = FALSE, color = 'black', fill = 'cyan4') +
-  facet_wrap(~ topic, scales = "free_y", ncol = 3, labeller = as_labeller(
-    function(x) paste('Topic', x)
-  )) +
-  scale_y_reordered() + 
-  labs(x = expression(beta), y = NULL)
-
-#TODO labels as topic names
-
-```
-
-```{r}
-tidy(mod_topic, matrix = "beta") %>% # unreported
-  anti_join(rename(stop_words, term = word)) %>% 
-  group_by(topic) %>%
-  top_n(20, beta) %>%
-  group_modify(.f = ~ tibble(terms = str_c(.x$term, collapse = ", "))) %>% 
-  ungroup() %>% 
-  kable(caption= "Most frequent words by topic", align = c("c", "l"))
-
-```
-
-```{r fig.cap="Topikok relatív megoszlásának időbeni dinamikája"}
-dat_topics %>% 
-  mutate(date = ym(str_sub(as.character(date), end = -4))) %>% 
-  group_by(date, country) %>% 
-  summarise_all(.funs = function(x)  mean(x, na.rm = T)) %>% 
-  ungroup() %>% 
-  select(date, starts_with('topic')) %>% 
-  group_by(date) %>% 
-  summarise_all(.funs = function(x)  mean(x, na.rm = T)) %>% 
-  ungroup() %>% 
-  pivot_longer(-1) %>% 
-  mutate(name = factor(str_remove_all(name, 'topic_'), levels = as.character(1:12),
-                       ordered = T)) %>% 
-  ggplot() +
-  aes(date, value, fill = name) +
-  geom_col(color = 'black') + 
-  labs(x = NULL, y = 'Relative frequency', fill = 'Topic') + 
-  scale_y_continuous(labels = scales::percent) + 
-  theme_minimal() +
-  theme(
-    legend.position = 'right',
-    legend.direction = 'vertical'
-  )
-
-```
-
-```{r fig.height=6, fig.cap='Topikok jellemzése szentiment, dátum és gyakoriság szerint'}
-topic_descript_df <- tibble( 
-  topic = c("Researches", "Politics", "Statistics", "Public Life", "Public Institutions", "Economy",
-            "Restrictions", "Vaccination", "Sport", "Travel", "Police Measures", "Mental Health"),
-  n = dat_topics %>% 
-    select(country, starts_with('topic')) %>% 
-    group_by(country) %>% 
-    summarise_all(.funs = function(x) mean(x, na.rm = T)) %>% 
-    ungroup() %>% 
-    select(-country) %>% 
-    apply(2, mean),
-  date = dat_topics %>% 
-    select(country, date, starts_with('topic')) %>% 
-    mutate(date = ym(str_sub(as.character(date), end = -4))) %>% 
-    group_by(country, date) %>% 
-    summarise_all(.funs = function(x) mean(x, na.rm = T)) %>% 
-    ungroup() %>% 
-    select(-country) %>% 
-    group_by(date) %>% 
-    summarise_all(.funs = function(x) mean(x, na.rm = T)) %>% 
-    {
-      apply(.[2:13], 2, function(x) {
-        as.character(.$date)[which.max(x)]
-      })
-    } %>% 
-    ymd(),
-  sentiment = dat_topics %>% 
-    select(country, sentiment, n_sentiment, top_topic) %>% 
-    na.omit() %>% 
-    group_by(country, top_topic) %>% 
-    summarise(sentiment = weighted.mean(x = sentiment,
-                                        w = n_sentiment,
-    )) %>% 
-    ungroup() %>% 
-    group_by(top_topic) %>% 
-    summarise(sentiment = mean(sentiment)) %>% 
-    arrange(desc(topic)) %>% 
-    .$sentiment
-) %>% 
-  arrange(desc(n))
-
-ggplot(data = topic_descript_df) +
-  geom_hline(aes(yintercept = 0), linetype = 2, color = 'grey20') +
-  geom_point(aes(x = date, y = (sentiment-mean(sentiment))*n, fill = sentiment, size = n)) +
-  scale_size(range = c(10, 20), breaks = c(.1), 
-             labels = function(x) scales::percent(x, accuracy = 1, decimal.mark = ',')) + # TODO
-  scale_fill_gradient(low = 'cyan4', high = 'grey90', guide = guide_colorsteps()) +
-  geom_text(mapping = aes(x = date, y = (sentiment-mean(sentiment))*n, label = topic), 
-            show.legend = F, size = 3) + 
-  geom_text(mapping = aes(x = ymd('2020-03-01'), y = -.00008), 
-            color = 'grey20', size = 3,
-            label = "Average of topics' sentiments") +
-  labs(x = "Most typical month of topics", y = 'Sentiment influence',
-       fill = 'Average sentiment', size = 'Relative frequency (size)') +
-  theme_minimal() + 
-  theme(
-    legend.position = 'bottom',
-    legend.box = "vertical",
-    legend.key.width = unit(1, 'cm')
-  )
-
-```
-
 # Econometrics
 
 ## Descriptive statistics
@@ -685,7 +726,7 @@ dat_plm <- dat_eco_sent %>%
     season = factor(season, levels = c('Winter 2019/2020', 'Spring 2020', 'Summer 2020', 'Autumn 2020',
                                        'Winter 2020/2021'))
   ) %>% 
-  filter(!is.na(sentiment)) %>% 
+  filter(!is.na(sent_mean)) %>% 
   select(code, date, everything())
 
 ```
@@ -693,7 +734,7 @@ dat_plm <- dat_eco_sent %>%
 ```{r fig.cap = "Regressziós fa"}
 # Regression tree -----------------------------------------------------------------------
 dat_plm %>% 
-  select(sentiment, eco, unemployment, cases, death, new_cases, new_deaths, t) %>% 
+  select(sent_mean, eco, unemployment, cases, death, new_cases, new_deaths, t) %>% 
   set_names('Sentiment', 'ESI', 'Unemployment', 'Number of cases (per 1000)', 'Number of deaths (per 1000)',
             'Number of cases', 'Number of deaths', 't') %>% 
   rpart::rpart(formula = Sentiment ~.,
@@ -707,7 +748,7 @@ dat_plm %>%
   mutate(
     date = str_sub(as.character(date), end = -4)
   ) %>% 
-  ggplot(aes(eco, sentiment, fill = season, label = paste(date, code))) + 
+  ggplot(aes(eco, sent_mean, fill = season, label = paste(date, code))) + 
   geom_point(size = 2) +
   ggrepel::geom_text_repel(max.overlaps = 5) +
   theme_bw() + 
@@ -722,8 +763,8 @@ dat_plm %>%
 ```{r}
 panel_models <- tibble(
   formula = c(
-    "sentiment ~ death + eco",
-    "sentiment ~ death + eco + season + death:t"
+    "sent_mean ~ death + eco",
+    "sent_mean ~ death + eco + season + death:t"
   )
 ) %>% 
   mutate(
