@@ -88,11 +88,9 @@ modified_bing <- bing_comparison  %>%
   select(word, value = 'my_sentiment_2') %>% 
   na.omit()
 
-word_frequency <- read_delim(str_c(WD, "/word_frequency_by_topic.csv"), 
+word_frequency <- read_delim(str_c(WD, "/data/word_frequency_by_topic.csv"), 
                               ",", escape_double = FALSE, trim_ws = TRUE)
 ```
-
-    ## Error: 'C:/Users/Knipping/Documents/Git_Projects/nlp-covid/word_frequency_by_topic.csv' does not exist.
 
 ``` r
 metadata_df <- tibble::tribble(
@@ -697,9 +695,9 @@ f_colorise <- function(x) {
     filter(value == -1) %>% 
     pull(word)
   case_when(
-    x %in% pos ~ 'positive',
-    x %in% neg ~ 'negative',
-    T ~ 'neutral'
+    x %in% pos ~ 'green', #positive
+    x %in% neg ~ 'red', #negative
+    T ~ 'black' #neutral
   )
 }
 
@@ -727,8 +725,6 @@ dat %>%
   labs(color = 'Sentiment')
 ```
 
-    ## Error: Unknown colour name: negative
-
 <div class="figure" style="text-align: center">
 
 <img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-11-1.png" alt="Szentimenttel bíró szavakkal korreláló szavak hálója"  />
@@ -742,19 +738,22 @@ Szentimenttel bíró szavakkal korreláló szavak hálója
 </div>
 
 ``` r
+#TODO color names
+```
+
+``` r
 dat_sentiment_daily %>% 
   group_by(date) %>% 
-  summarise_at(c('n_total', 'n'), .funs = function(x) sum(x, na.rm = T)) %>% 
-  ggplot(aes(date, n/n_total)) +
+  summarise_at(c('n', 'sent_n'), .funs = function(x) sum(x, na.rm = T)) %>% 
+  ggplot(aes(date, sent_n/n)) +
   geom_line(color = '#595959', size = .8) +
-  geom_line(aes(date, zoo::rollmean(n/n_total, 7, na.pad=TRUE), 
+  geom_line(aes(date, zoo::rollmean(sent_n/n, 7, na.pad=TRUE), 
                 color = 'Rolling 7-day average'), size = 1.3) +
   scale_color_manual(values = c('#E3120B')) + 
   labs(x = NULL, y = 'Ratio of words with sentiment', color = NULL)
 ```
 
-    ## Error: Can't subset columns that don't exist.
-    ## x Column `n_total` doesn't exist.
+<img src="CoronaSentiment_files/figure-gfm/unnamed-chunk-12-1.png" style="display: block; margin: auto;" />
 
 ``` r
 # Explore the data ----------------------------------------------------------------------

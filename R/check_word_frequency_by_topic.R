@@ -53,7 +53,7 @@ for (i in 1:100) {
 word_freq %>% 
   group_by(topic, word) %>% 
   summarise(n = sum(n, na.rm = TRUE)) %>% 
-  write.csv(file = "word_frequency_by_topic.csv")
+  write.csv(file = str_c(WD, "/data/word_frequency_by_topic.csv"))
 
 # # TODO REMOVE LATER
 # 
