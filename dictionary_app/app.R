@@ -8,7 +8,7 @@ bing_df <- tidytext::get_sentiments("bing")
 
 modified_sentiment_dictionary <- read_delim("modified_sentiment_dictionary.csv", 
                                             ";", escape_double = FALSE, trim_ws = TRUE) %>% 
-  select(-X14) %>% 
+  #select(-X14) %>% 
   pivot_longer(-1)
 
 ui <- dashboardPage(

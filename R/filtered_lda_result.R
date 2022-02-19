@@ -29,11 +29,11 @@ ap_topics <- topic_model_df %>%
 ap_topics %>% 
   anti_join(select(stop_words, term = word)) %>%
   group_by(topic) %>% 
-  slice_max(beta, n = 20) %>% 
+  slice_max(beta, n = 30) %>% 
   arrange(desc(beta)) %>% 
   summarise(words = str_c(term, collapse = ", ")) %>% 
   mutate(
-    name = c("lockdown", "school", "politics", "health", "vaccine research", "sport", "global politics", "vaccine politics", "mental health", "health", "stats", "economy"),
+    name = c("lockdown", "school", "politics", "health", "vaccine research", "sport", "global politics", "vaccine politics", "mental health", "General statistics", "Global statistics", "Economy"),
     words
   )
 
@@ -42,8 +42,8 @@ library(tidyr)
 beta_wide <- ap_topics %>%
   mutate(topic = paste0("topic", topic)) %>%
   pivot_wider(names_from = topic, values_from = beta) %>% 
-  filter(topic10 > .001 | topic11 > .001) %>%
-  mutate(log_ratio = log2(topic10 / topic11))
+  filter(topic5 > .001 | topic8 > .001) %>%
+  mutate(log_ratio = log2(topic5 / topic8))
 
 beta_wide %>% 
   slice_max(abs(log_ratio), n = 30) %>% 
@@ -69,7 +69,7 @@ document_df <- topic_model_df %>%
   left_join(x = document_df)
 
 topic_name <- function(x) {
-c("lockdown", "school", "politics", "health", "vaccine research", "sport", "global politics", "vaccine politics", "mental health", "health2", "stats", "economy")[[as.numeric(x)]]
+c("Restrictions", "Schools", "General politics", "Hospitals", "Vaccine research", "Sport", "Global politics", "Vaccine politics", "Mental health",  "General statistics", "Global statistics", "Economy")[[as.numeric(x)]]
 }
 
 document_df %>% 

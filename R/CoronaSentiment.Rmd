@@ -459,7 +459,7 @@ topic_descript_df <- tibble(
     "Governmental aids", 
     "Restrictions",
     "Vaccination",
-    "Mental Health", 
+    "Mental Health", #Social life
     "Researches", 
     "Schools",
     "Work",
