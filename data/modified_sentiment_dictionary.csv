@@ -1,4 +1,4 @@
-﻿word;Economy and travel;Sport;Hospitals;Statistics;Governmental aids;Restrictions;Vaccination;Mental Health;Researches;Schools;Work;Politics
+﻿word;Economy;Sport;Hospitals;General statistics;Restrictions;Vaccine research;Mental health;Schools;Global politics;General politics;Global statistics;Vaccine politics
 virus;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 infected;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 infection;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
@@ -61,14 +61,14 @@ dead;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 recommendations;1;1;1;1;1;1;1;1;1;1;1;1
 lead;1;1;1;1;1;1;1;1;1;1;1;1
 respect;1;1;1;1;1;1;1;1;1;1;1;1
-fall;-1;NA;NA;NA;-1;NA;NA;NA;NA;NA;NA;NA
+fall;-1;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
 rapid;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
 worst;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 bad;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 worked;1;1;1;1;1;1;1;1;1;1;1;1
-fell;-1;NA;NA;NA;-1;NA;NA;NA;NA;NA;NA;NA
+fell;-1;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
 opposition;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
-decline;-1;NA;NA;-1;-1;NA;NA;NA;NA;NA;NA;NA
+decline;-1;NA;NA;-1;NA;NA;NA;NA;NA;NA;-1;NA
 positives;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 isolated;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 recommended;1;1;1;1;1;1;1;1;1;1;1;1
@@ -117,7 +117,7 @@ worth;1;1;1;1;1;1;1;1;1;1;1;1
 dedicated;1;1;1;1;1;1;1;1;1;1;1;1
 leading;1;1;1;1;1;1;1;1;1;1;1;1
 precisely;1;1;1;1;1;1;1;1;1;1;1;1
-exceeded;NA;-1;-1;NA;NA;-1;-1;-1;-1;-1;-1;-1
+exceeded;NA;-1;-1;NA;-1;-1;-1;-1;-1;-1;NA;-1
 prison;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 impossible;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 trust;1;1;1;1;1;1;1;1;1;1;1;1
@@ -166,7 +166,7 @@ complicated;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 effectiveness;1;1;1;1;1;1;1;1;1;1;1;1
 improve;1;1;1;1;1;1;1;1;1;1;1;1
 fast;1;1;1;1;1;1;1;1;1;1;1;1
-fallen;-1;NA;NA;NA;-1;NA;NA;NA;NA;NA;NA;NA
+fallen;-1;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
 useful;1;1;1;1;1;1;1;1;1;1;1;1
 complex;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 chronic;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
@@ -229,7 +229,7 @@ sharp;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
 recommend;1;1;1;1;1;1;1;1;1;1;1;1
 proven;1;1;1;1;1;1;1;1;1;1;1;1
 helping;1;1;1;1;1;1;1;1;1;1;1;1
-falling;-1;NA;NA;NA;-1;NA;NA;NA;NA;NA;NA;NA
+falling;-1;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
 correct;1;1;1;1;1;1;1;1;1;1;1;1
 illegal;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 slowly;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
@@ -256,13 +256,13 @@ refused;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 miss;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 interesting;1;1;1;1;1;1;1;1;1;1;1;1
 suitable;1;1;1;1;1;1;1;1;1;1;1;1
-exceed;NA;-1;-1;NA;NA;-1;-1;-1;-1;-1;-1;-1
+exceed;NA;-1;-1;NA;-1;-1;-1;-1;-1;-1;NA;-1
 innovation;1;1;1;1;1;1;1;1;1;1;1;1
 denied;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 capable;1;1;1;1;1;1;1;1;1;1;1;1
 fresh;1;1;1;1;1;1;1;1;1;1;1;1
 unclear;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
-defeat;-1;NA;NA;-1;-1;-1;-1;1;NA;NA;NA;NA
+defeat;-1;NA;NA;-1;-1;-1;1;NA;NA;NA;-1;-1
 worry;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 sad;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 supports;1;1;1;1;1;1;1;1;1;1;1;1
@@ -292,7 +292,7 @@ fun;1;1;1;1;1;1;1;1;1;1;1;1
 ease;1;1;1;1;1;1;1;1;1;1;1;1
 enjoy;1;1;1;1;1;1;1;1;1;1;1;1
 suspicion;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
-falls;-1;NA;NA;NA;-1;NA;NA;NA;NA;NA;NA;NA
+falls;-1;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA
 crowded;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 celebrated;1;1;1;1;1;1;1;1;1;1;1;1
 willing;1;1;1;1;1;1;1;1;1;1;1;1
@@ -304,7 +304,7 @@ conflict;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 hot;1;1;1;1;1;1;1;1;1;1;1;1
 satisfied;1;1;1;1;1;1;1;1;1;1;1;1
 expensive;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
-declining;-1;NA;NA;-1;-1;NA;NA;NA;NA;NA;NA;NA
+declining;-1;NA;NA;-1;NA;NA;NA;NA;NA;NA;-1;NA
 reliable;1;1;1;1;1;1;1;1;1;1;1;1
 conservative;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 strange;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
@@ -365,7 +365,7 @@ holy;1;1;1;1;1;1;1;1;1;1;1;1
 promise;1;1;1;1;1;1;1;1;1;1;1;1
 strike;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 supreme;1;1;1;1;1;1;1;1;1;1;1;1
-exceeds;NA;-1;-1;NA;NA;-1;-1;-1;-1;-1;-1;-1
+exceeds;NA;-1;-1;NA;-1;-1;-1;-1;-1;-1;NA;-1
 stuck;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 breaking;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 controversial;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
@@ -534,11 +534,11 @@ congestion;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 struck;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 scared;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 variety;1;1;1;1;1;1;1;1;1;1;1;1
-boom;1;1;1;1;1;1;-1;1;1;1;1;1
+boom;1;1;1;1;1;-1;1;1;1;1;1;-1
 imposing;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 loneliness;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 downturn;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
-exceeding;NA;-1;-1;NA;NA;-1;-1;-1;-1;-1;-1;-1
+exceeding;NA;-1;-1;NA;-1;-1;-1;-1;-1;-1;NA;-1
 clash;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 reassure;1;1;1;1;1;1;1;1;1;1;1;1
 understandable;1;1;1;1;1;1;1;1;1;1;1;1
@@ -906,7 +906,7 @@ advocated;1;1;1;1;1;1;1;1;1;1;1;1
 dire;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 hopeful;1;1;1;1;1;1;1;1;1;1;1;1
 meaningful;1;1;1;1;1;1;1;1;1;1;1;1
-declines;-1;NA;NA;-1;-1;NA;NA;NA;NA;NA;NA;NA
+declines;-1;NA;NA;-1;NA;NA;NA;NA;NA;NA;-1;NA
 disputed;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 exploitation;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1;-1
 exemplary;1;1;1;1;1;1;1;1;1;1;1;1

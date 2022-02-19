@@ -8,14 +8,15 @@ WD <- getwd() %>%
 
 setwd(WD)
 
-mod_topic <- readRDS(str_c(WD, "/data/final_topic_model.RDS"))
+load(str_c(WD, "/data/filtered_topic_models/filtered_topic_model12.RData"))
+
+mod_topic <- mod
 
 dat <- list.files(str_c(WD, "/data/")) %>% 
   keep(~ str_detect(., "dat_\\d+.RDS")) %>% 
   {str_c(WD, "/data/", .)} %>% 
   map(readRDS) %>% 
   reduce(rbind)
-
 
 #Posterior estimation and calculation of top topics for each article
 
@@ -55,6 +56,7 @@ for (i in 1:(length(v) - 1)) {
     rename_all(.funs = function(x) str_replace_all(x, 'X', 'topic_')) %>%
     {rbind(dat_topics, .)}
 }
+
 
 dat_topics <- dat_topics %>% 
   pivot_longer(cols = -(1:3)) %>% 

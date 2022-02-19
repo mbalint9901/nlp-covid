@@ -12,7 +12,6 @@ dat <- list.files(str_c(WD, "/data/")) %>%
 
 bing_df <- get_sentiments("bing")
 
-
 dat_topics <- readRDS(str_c(WD, "/data/dat_topics.RDS"))
 
 topic_name <- tibble(

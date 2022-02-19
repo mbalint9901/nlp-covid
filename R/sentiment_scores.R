@@ -15,20 +15,18 @@ dat <- list.files(str_c(WD, "/data")) %>%
 dat_topics <- readRDS(str_c(WD, "/data/dat_topics.RDS"))
 
 topic_name <- tibble(
-  topic = 1:12, topic_name = c(
-    "Economy and travel",
-    "Sport", 
-    "Hospitals", 
-    "Statistics", 
-    "Governmental aids", 
-    "Restrictions",
-    "Vaccination",
-    "Mental Health", 
-    "Researches", 
-    "Schools",
-    "Work",
-    "Politics"
-  )
+  topic = 1:12, topic_name = c("Restrictions", 
+                               "Schools",
+                               "General politics",
+                               "Hospitals",
+                               "Vaccine research",
+                               "Sport",
+                               "Global politics",
+                               "Vaccine politics",
+                               "Mental health",
+                               "General statistics",
+                               "Global statistics", 
+                               "Economy")
 )
 
 sent_dictionary <- read.csv(str_c(WD, "/data/modified_sentiment_dictionary.csv"), sep = ";") %>% 
@@ -39,45 +37,71 @@ sent_dictionary <- read.csv(str_c(WD, "/data/modified_sentiment_dictionary.csv")
   left_join(topic_name) %>% 
   select(-topic_name)
 
+
+#új tábla: cikk id, 12 topik valószínűség (gamma), szó, long verzió, left_join dictionary,
+# súlyozott átlag,
+# NEM a cikk szinten aggregáltan számoljuk!
+
+
 dat_joined <- dat %>% 
-  left_join(., dat_topics %>% select(URL, top_topic) %>% unique(), by = c("URL")) %>% 
-  mutate(id = as.character(row_number())) # aggregation is faster if grouping variable is chr
+  left_join(., dat_topics %>% select(-country, -date) %>%  unique(), by = c("URL")) %>% 
+  mutate(id = as.character(row_number()),
+         month = lubridate::ym(str_c(lubridate::year(date), "-",lubridate::month(date)))) %>% 
+  relocate(id, month)# aggregation is faster if grouping variable is chr
 
-dat_sentiment <- tibble()
+dat_sentiment_article <- tibble()
+dat_sentiment_daily <- tibble()
+dat_sentiment_monthly <- tibble()
 
-for (i in 1:100) { 
+for (i in 1:length(unique(dat_joined$date))) { 
   # not enogh memory -> perform the calculation iterativly by splitting the df
   message(i)
-  dat_sentiment <- dat_joined %>% 
-    mutate(group = cut(as.numeric(id), 100, F)) %>%
-    filter(group == i) %>%
-    select(id, topic = top_topic, text) %>% 
+  dat_i <- dat_joined %>% 
+    select(-title, -top_topic, -URL) %>% 
+    pivot_longer(-(1:5)) %>% 
+    #mutate(group = cut(as.numeric(id), 100, F)) %>%
+    filter(month == unique(dat_joined$date)[i]) %>% 
+    #filter(group == i) %>%
+    transmute(id, date, month, country, topic = as.numeric(str_remove(name, "topic_")), text, topic_ratio = value) %>% 
     unnest_tokens("word", text) %>% 
-    left_join(sent_dictionary) %>% 
+    #filter(!is.na(word)) %>% 
+    left_join(sent_dictionary)
+  
+  dat_sentiment_article <- 
+    dat_i %>% 
     group_by(id) %>% 
-    summarise(sent_mean = mean(sent, na.rm = T), sent_n = sum(!is.na(sent)), n = n()) %>% 
+    #weighted mean with weights fromm topic_n
+    summarise(sent_mean = weighted.mean(x = sent, w=topic_ratio, na.rm = T), sent_n = sum(!is.na(sent))/12, n = n()/12) %>%  # TODO
+    ungroup() %>% 
     mutate(sent_mean = ifelse(is.nan(sent_mean) == T, 0, sent_mean)) %>% 
     left_join(dat_joined) %>% 
     select(-text) %>% 
-    bind_rows(dat_sentiment)
+    bind_rows(dat_sentiment_article)
+  
+  dat_sentiment_daily <- 
+    dat_i %>% 
+    group_by(date, country) %>% 
+    # Maradhat a sima átlag (?)
+    #summarise(n = sum(n), sent_mean = sum(sent_mean*sent_n) / sum(sent_n), sent_n = sum(sent_n)) %>% 
+    summarise(sent_mean = weighted.mean(x = sent, w=topic_ratio, na.rm = T), 
+              daily_weight = sum(topic_ratio[!is.na(sent)]),
+              sent_n = sum(!is.na(sent))/12, 
+              n = n()/12) %>%  # TODO
+    ungroup() %>% 
+    bind_rows(dat_sentiment_daily)
   
 }
 
-dat_sentiment_daily <- dat_sentiment %>% 
-  group_by(date, country) %>% 
-  summarise(n = sum(n), sent_mean = sum(sent_mean*sent_n) / sum(sent_n), sent_n = sum(sent_n)) %>% 
-  ungroup()
+#Daily sentiment calculation inside function
 
-dat_sentiment_monthly <- dat_sentiment %>% 
-  mutate(
-    date = str_c(lubridate::year(date), "-",lubridate::month(date)),
-    date = lubridate::ym(date)
-  ) %>% 
-  group_by(date, country) %>% 
-  summarise(n = sum(n), sent_mean = sum(sent_mean*sent_n) / sum(sent_n), sent_n = sum(sent_n)) %>% 
-  ungroup()
+  dat_sentiment_monthly <- 
+    dat_i %>%
+    group_by(month, country) %>%
+    summarise(sent_mean = weighted.mean(x = sent, w=topic_ratio, na.rm = T), sent_n = sum(!is.na(sent))/12, n = n()/12) %>%  # TODO
+    ungroup() %>%
+    bind_rows(dat_sentiment_monthly)
 
 save(
-  list = c("dat_sentiment", "dat_sentiment_daily", "dat_sentiment_monthly"), 
+  list = c("dat_sentiment_article", "dat_sentiment_daily", "dat_sentiment_monthly"), 
   file = str_c(WD, "/data/sentiment_scores_results.RData")
 )
