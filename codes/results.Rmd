@@ -69,11 +69,7 @@ theme_set(theme_grey() + theme(
 
 # DFs from the cleaning.R file ==========================================================
 
-dat <- list.files(str_c(WD, "/data/")) %>% 
-  keep(~ str_detect(., "dat_\\d+.RDS")) %>% 
-  {str_c(WD, "/data/", .)} %>% 
-  map(readRDS) %>% 
-  reduce(rbind)
+dat <- all_news()
 
 
 # Topic models ==========================================================================
@@ -83,46 +79,50 @@ dat <- list.files(str_c(WD, "/data/")) %>%
 # Posterior estimation of each article with topic models is also computation heavy
 # >> find the estimation in -> dat_topics.R <-
 
-dat_topics <- read_rds(str_c(WD, "/data/dat_topics.rds"))
+dat_topics <- read_rds("data/dat_topics.rds")
 
 # Sentiment scores  ==========================================================================
 
 # Sentiment scores are calculated by a dictionary based on topics -> sentiment_scores.R <-
 # moved this calculations to different files due to the large computation time
 
-load(str_c(WD, "/data/sentiment_scores_results.RData"))
-# 
-# dat_sentiment_daily <- read_rds(str_c(WD, "/data/dat_sentiment_daily.RDS")) %>% 
-#   select(date, country, sentiment =  new_sentiment, n = new_n, n_total = n)
-# 
-# dat_sentiment_monthly <- read_rds(str_c(WD, "/data/dat_sentiment_monthly.RDS")) %>% 
-#   select(date, country, sentiment = new_sentiment, n = new_n, n_total = n)
-# 
-dat_words_monthly <- read_rds(str_c(WD, "/data/dat_words_monthly.RDS"))
+load("data/sentiment_scores_results.RData")
 
-load(str_c(WD, "/data/raw/Germany_rawtext.RData"))
+# Word frequency by month ====================================================================
 
-source(str_c(WD, "/R/data_setup.R")) # additional datasets available online
+dat_words_monthly <- read_rds("data/dat_words_monthly.RDS")
+
+# Additional datasets available online from Covid cases to economic sentiment
+
+source("codes/data_setup.R") 
 
 # This RData contains the articles after the main cleaning process
 # To ensure full reproducibility see the attached files at the corresponding
 # GitHub Repo: -> https://github.com/MarcellGranat/CoronaSentiment <-
 
-
 ### COVID-dictionary ####################################################################
 
 # own edited sentiment dictionary calibrated to COVID articles
+# Taken into account the Bing original dictionary and altering the 2000 most frequent
+# sentiment words in the dictionary
 
-bing_comparison <- read_delim(str_c(WD, "/data/sentiment_scores.csv"), 
-                              ";", escape_double = FALSE, trim_ws = TRUE)
+modified_sentiment_dictionary <- 
+  read_delim("data/modified_sentiment_dictionary.csv",
+             delim = ";", escape_double = FALSE)
 
-modified_bing <- bing_comparison  %>% 
-  select(word, value = 'my_sentiment_2') %>% 
-  na.omit()
+modified_bing <- 
+  modified_sentiment_dictionary %>% 
+  pivot_longer(-1) %>% 
+  group_by(word) %>% 
+  count(value) %>% 
+  slice(which.max(n)) %>% 
+  select(-n)
 
-word_frequency <- read_delim(str_c(WD, "/data/word_frequency_by_topic.csv"), 
-                              ",", escape_double = FALSE, trim_ws = TRUE)
-
+# %>% 
+#     left_join(get_sentiments(lexicon = "bing") %>% 
+#                 filter(str_detect(word, "envio"))
+#               transmute(word, 
+#                         original_sentiment = ifelse(sentiment == "positive", 1, -1)))
 
 
 ```
@@ -166,11 +166,6 @@ metadata_df <- tibble::tribble(
 )
 
 metadata_df <- dat %>% 
-  count(country) %>% 
-  rename("Number of articles" = n) %>% 
-  merge(metadata_df, by.x = "country", by.y = "Country code")
-
-metadata_df <- dat %>% 
   group_by(country) %>% 
   mutate("Starting date" = as.character(ymd(min(date))), 
          "End date" = as.character(ymd(max(date)))) %>% 
@@ -191,6 +186,8 @@ select(metadata_df, 'Country', "Media outlet", "State-financed", "Starting date"
 
 ```{r fig.cap="Leggyakrabban előforduló szavak a magyar nyelvű cikkekben a fordítást megelőzően és azt követően.", fig.height=8}
 # Automatic translation =================================================================
+
+load("data/raw/Germany_rawtext.RData")
 
 Germany_rawtext %<>% 
   select(text) %>% 
@@ -353,9 +350,9 @@ dat_covid %>%
 
 ```{r fig.cap='Finding the optimal number of topics for modelling', fig.height=2.5}
 topic_model_df <- map(2:15, ~ {
-    load(str_c("data/filtered_topic_model", ., ".RData"))
-    get("mod")
-  }) %>% 
+  load(str_c("data/filtered_topic_model", ., ".RData"))
+  get("mod")
+}) %>% 
   enframe(value = "model", name = NULL) %>% 
   mutate(n_topics = 2:15)
 
@@ -371,11 +368,9 @@ topic_model_df %>%
 
 ```{r fig.height=12, fig.cap='Leggyakoribb szavak topikonként'}
 
-mod_topic <- topic_model_df[["model"]][[11]]
+load("data/filtered_topic_model12.RData")
 
-#saveRDS(mod_topic, file = "data/final_topic_model.RDS")
-
-tidy(mod_topic, matrix = "beta") %>%
+tidy(mod, matrix = "beta") %>%
   anti_join(rename(stop_words, term = word)) %>% 
   group_by(topic) %>%
   top_n(40, beta) %>%
@@ -394,7 +389,7 @@ tidy(mod_topic, matrix = "beta") %>%
 #TODO labels as topic names
 
 
-tidy(mod_topic, matrix = "beta") %>% # unreported
+tidy(mod, matrix = "beta") %>% # unreported
   anti_join(rename(stop_words, term = word)) %>% 
   group_by(topic) %>%
   top_n(20, beta) %>%
@@ -435,18 +430,18 @@ dat_topics %>%
 ```{r fig.height=6, fig.cap='Topikok jellemzése szentiment, dátum és gyakoriság szerint'}
 topic_descript_df <- tibble( 
   topic = c(
-    "Economy and travel",
-    "Sport", 
-    "Hospitals", 
-    "Statistics", 
-    "Governmental aids", 
-    "Restrictions",
-    "Vaccination",
-    "Mental Health", #Social life
-    "Researches", 
+    "Restrictions", 
     "Schools",
-    "Work",
-    "Politics"
+    "General politics",
+    "Hospitals",
+    "Vaccine research",
+    "Sport",
+    "Global politics",
+    "Vaccine politics",
+    "Mental health",
+    "General statistics",
+    "Global statistics", 
+    "Economy"
   ),
   n = dat_topics %>% 
     select(country, starts_with('topic')) %>% 
@@ -511,11 +506,18 @@ ggplot(data = topic_descript_df) +
 ## Sentiment
 
 ```{r}
-bing_comparison %>% 
-  filter(sentiment != my_sentiment_2) %>% 
+modified_bing %>%
+  left_join(get_sentiments(lexicon = "bing") %>% 
+            transmute(word,
+                      original_sentiment = ifelse(sentiment == "positive", 1, -1))) %>% 
+  left_join(dat_words_monthly %>% 
+              group_by(words) %>% 
+              summarise(n = sum(n)),
+            by = c("word" = "words")) %>% 
+  filter(value != original_sentiment) %>% 
   arrange(desc(n)) %>% 
-  mutate(my_sentiment = ifelse(my_sentiment_2 == "NA", 0, my_sentiment_2)) %>% 
-  select(word, n, sentiment, my_sentiment = my_sentiment_2) %>% 
+  mutate(value = ifelse(value == "NA", 0, value)) %>% 
+  select(word, n, original_sentiment, value) %>% 
   head(23) %>% 
   kable(caption = "Most frequent words with changed sentiments because of corpus-specific context", col.names = c("Word", "Frequency", "Old sentiment", "New sentiment"))
 ```
@@ -670,12 +672,13 @@ dat_words_monthly %>%
 ## Descriptive statistics
 
 ```{r}
-dat_plm <- dat_eco_sent %>% 
-  filter(indic == "BS-ESI-I") %>% 
-  select(date = time, code = geo, eco = values) %>% 
-  merge(mutate(dat_sentiment_monthly, code = country), all = T) %>% 
-  merge(dat_unemployment, all = T) %>% 
-  merge(dat_covid_monthly, all = T) %>% 
+dat_plm <- 
+rename(dat_sentiment_monthly, code = country, date = m) %>% 
+  left_join(dat_eco_sent %>% 
+          filter(indic == "BS-ESI-I") %>% 
+  select(date = time, code = geo, eco = values)) %>% 
+  left_join(dat_unemployment) %>% 
+  left_join(dat_covid_monthly) %>% 
   mutate(
     t = lubridate::interval(lubridate::ymd('2020-01-01'), date),
     t = lubridate::as.period(t) %/% months(1),
@@ -684,7 +687,7 @@ dat_plm <- dat_eco_sent %>%
     new_cases = ifelse(is.na(new_cases), 0, new_cases),
     new_deaths = ifelse(is.na(new_deaths), 0, new_deaths)
   ) %>% 
-  select(-country, -n) %>% 
+  select(-n) %>% 
   pivot_longer(-c(1:2)) %>% 
   {
     rbind(.,

@@ -1,18 +1,7 @@
 library(tidyverse)
 library(tidytext)
 
-set.seed(2021)
-
-WD <- getwd() %>% 
-  gsub(pattern = "nlp-covid.*", replacement = "nlp-covid")
-
-setwd(WD)
-
-dat <- list.files(str_c(WD, "/data/")) %>% 
-  keep(~ str_detect(., "dat_\\d+.RDS")) %>% 
-  {str_c(WD, "/data/", .)} %>% 
-  map(readRDS) %>% 
-  reduce(rbind)
+dat <- all_news()
 
 dat_words_monthly <- dat %>% 
   select(country, date, text) %>% 
@@ -24,4 +13,4 @@ dat_words_monthly <- dat %>%
   count(country, date, words)
 
 
-saveRDS(dat_words_monthly, str_c(WD, "/data/dat_words_monthly.RDS"))
+saveRDS(dat_words_monthly, "data/dat_words_monthly.RDS")

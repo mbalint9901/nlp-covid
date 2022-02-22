@@ -5,8 +5,8 @@ library(topicmodels)
 WD <- getwd() %>% 
   gsub(pattern = "nlp-covid.*", replacement = "nlp-covid")
 
-topic_model_df <- list.files("data/filtered_topic_models/", full.names = TRUE) %>% 
-  keep(str_detect, "RData") %>% 
+topic_model_df <- list.files("data/", full.names = TRUE) %>% 
+  keep(str_detect, "filtered_topic_model") %>% 
   {set_names(., str_remove_all(., "\\D"))} %>% 
   {.[as.character(2:15)]} %>% 
   map(~ {load(.); get("mod")}) %>% 
@@ -15,10 +15,14 @@ topic_model_df <- list.files("data/filtered_topic_models/", full.names = TRUE) %
 
 topic_model_df %>% 
   mutate(
-    l = map_dbl(model, logLik)
+    l = map_dbl(model, topicmodels::logLik),
+    p = map_dbl(model, topicmodels::perplexity)
+    #Coherence and prevalence are missing
   ) %>% 
-  ggplot(aes(n_topics, l)) + 
-  geom_line()
+  pivot_longer(-c(1:2)) %>% 
+  ggplot(aes(n_topics, value)) + 
+  geom_line() +
+  facet_wrap(~name, scales = "free_y")
 
 ap_topics <- topic_model_df %>% 
   filter(n_topics == 12) %>% 
