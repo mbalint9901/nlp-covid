@@ -1,5 +1,12 @@
 # nlp-covid
 
+```mermaid
+graph TD
+   A(Economic and COVID-19 data source) -.data_setup.R..-> B(Economic and COVID-19 data)
+   c(Raw text data) -.cleaning.R.-> D(Cleaned data - dat.RData)
+```
+
+
 This repository serves as the storage location for files concerning analysis of 
 articles in European countries concerning the coronavirus pandemic.
 
